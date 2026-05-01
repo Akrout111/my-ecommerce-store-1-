@@ -1,14 +1,20 @@
 "use client";
 
-import { useSyncExternalStore, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useLanguage } from "@/components/ecommerce/language-provider";
-import { COLORS } from "@/lib/constants";
 
 interface CountdownTimerProps {
   endDate: string;
 }
 
-function calculateTimeLeft(endDate: string) {
+interface TimeLeft {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+}
+
+function calculateTimeLeft(endDate: string): TimeLeft {
   const diff = new Date(endDate).getTime() - Date.now();
   if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
 
@@ -20,22 +26,33 @@ function calculateTimeLeft(endDate: string) {
   };
 }
 
-function subscribe(cb: () => void) {
-  const id = setInterval(cb, 1000);
-  return () => clearInterval(id);
-}
-
 export function CountdownTimer({ endDate }: CountdownTimerProps) {
   const { t } = useLanguage();
+  const [timeLeft, setTimeLeft] = useState<TimeLeft>(() => calculateTimeLeft(endDate));
 
-  const getSnapshot = useCallback(() => calculateTimeLeft(endDate), [endDate]);
-  const getServerSnapshot = useCallback(() => ({ days: 0, hours: 0, minutes: 0, seconds: 0 }), []);
+  useEffect(() => {
+    // If countdown is already over, no need to set interval
+    if (timeLeft.days === 0 && timeLeft.hours === 0 && timeLeft.minutes === 0 && timeLeft.seconds === 0) {
+      return;
+    }
 
-  const timeLeft = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+    const id = setInterval(() => {
+      const newTimeLeft = calculateTimeLeft(endDate);
+      setTimeLeft(newTimeLeft);
+
+      // Stop the interval when countdown reaches zero
+      if (newTimeLeft.days === 0 && newTimeLeft.hours === 0 && newTimeLeft.minutes === 0 && newTimeLeft.seconds === 0) {
+        clearInterval(id);
+      }
+    }, 1000);
+
+    return () => clearInterval(id);
+  }, [endDate, timeLeft.days, timeLeft.hours, timeLeft.minutes, timeLeft.seconds]);
 
   const totalHoursLeft = timeLeft.days * 24 + timeLeft.hours;
+
   // Color: green → yellow → red as deadline approaches
-  const getColor = () => {
+  const getColor = (): string => {
     if (timeLeft.days > 2) return "#22C55E";
     if (timeLeft.days > 1) return "#EAB308";
     if (totalHoursLeft > 12) return "#F97316";
@@ -57,7 +74,7 @@ export function CountdownTimer({ endDate }: CountdownTimerProps) {
         <div key={unit.label} className="flex items-center gap-2">
           <div className="flex flex-col items-center">
             <div
-              className="flex items-center justify-center w-12 h-12 rounded-lg text-lg font-bold"
+              className="flex items-center justify-center w-12 h-12 rounded-lg text-lg font-bold transition-colors duration-500"
               style={{ backgroundColor: `${color}20`, color }}
             >
               {String(unit.value).padStart(2, "0")}
