@@ -1,16 +1,27 @@
 "use client";
 
+import { ShoppingBag } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
-import { Badge } from "@/components/ui/badge";
+import { COLORS } from "@/lib/constants";
 
 export function CartCount() {
-  const itemCount = useCartStore((s) => s.itemCount);
-
-  if (itemCount <= 0) return null;
+  const { itemCount, openCart } = useCartStore();
 
   return (
-    <Badge className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 p-0 text-[10px] font-bold text-white">
-      {itemCount > 99 ? "99+" : itemCount}
-    </Badge>
+    <button
+      onClick={openCart}
+      className="relative flex h-10 w-10 items-center justify-center rounded-full hover:bg-accent transition-colors"
+      aria-label="Shopping cart"
+    >
+      <ShoppingBag className="h-5 w-5" style={{ color: COLORS.gold }} />
+      {itemCount > 0 && (
+        <span
+          className="absolute -top-0.5 -end-0.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white"
+          style={{ backgroundColor: COLORS.gold }}
+        >
+          {itemCount}
+        </span>
+      )}
+    </button>
   );
 }

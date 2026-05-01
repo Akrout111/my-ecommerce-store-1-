@@ -1,0 +1,664 @@
+# 🛍️ Persona — Fashion Reimagined
+
+## Complete Project Specification
+
+---
+
+## 1. Project Overview
+
+**Persona** is an AI-powered, multi-department fashion e-commerce platform that reimagines the online shopping experience. It combines cutting-edge technology with luxury aesthetics to deliver a personalized, immersive shopping journey across Women's, Men's, Kids', and Accessories departments.
+
+**Brand Identity:**
+- **Name:** Persona — Fashion Reimagined
+- **Tagline:** "Your Style. Your Story. Your Persona."
+- **Color Palette:**
+  - Gold: `#C9A96E` (luxury accent)
+  - Rose: `#E8A0BF` (feminine touch)
+  - Dark: `#0F0F0F` (premium backgrounds)
+  - Cream: `#FAF8F5` (light backgrounds)
+- **Design Language:** Glassmorphism + Bento-box layouts + Micro-animations
+
+---
+
+## 2. Core Features
+
+### 2.1 🏠 Homepage Experience
+
+| Feature | Description |
+|---------|-------------|
+| **Hero Carousel** | Full-width image carousel with auto-play, manual navigation, and CTA buttons. Each slide showcases a department or seasonal campaign. Framer Motion parallax effects on scroll. |
+| **Category Grid** | Bento-style grid of department categories (Women, Men, Kids, Accessories, Shoes, Beauty, Sportswear, Luxury). Each card has a hover-zoom image effect, overlay text, and link to department. Responsive: 4 columns → 2 columns on mobile. |
+| **Featured Products** | Horizontally scrollable product carousel highlighting curated/featured items. Product cards show image, name, price, rating, and quick-add button. |
+| **Flash Deals Section** | Time-limited deals with live countdown timers. Each deal card shows original price, sale price, discount percentage, and time remaining. Urgency-driven design with pulsing "HOT" badges. |
+| **New Arrivals** | Grid of latest products sorted by date. "NEW" badge overlay. Lazy-loaded images with skeleton placeholders. |
+| **Best Sellers** | Top-selling products ranked by sales volume. Trophy/fire emoji badges for top 3. |
+| **Brand Marquee** | Infinite horizontal scroll of partner brand logos. Auto-scroll with pause on hover. |
+| **Promo Banner** | Full-width promotional banner (mid-page) for seasonal sales, limited collections, or brand collaborations. |
+| **Newsletter Signup** | Email input with animated subscribe button. Success/error toast notifications. |
+| **Department Hub** | AI-powered department showcase — each department has its own visual identity, AI style recommendations, and curated collections. |
+
+### 2.2 🔍 Product System
+
+| Feature | Description |
+|---------|-------------|
+| **Product Card** | Image with hover-zoom, product name, brand, price (with sale display), star rating, wishlist heart icon, quick-add to cart. |
+| **Product Grid** | Responsive grid (4→3→2→1 columns). Filter sidebar for size, color, price range, brand. Sort by: Newest, Price Low-High, Price High-Low, Best Selling, Rating. |
+| **Product Quick View** | Dialog/modal showing product details without leaving the page. Image gallery, size selector, color selector, add to cart. |
+| **Product Image Gallery** | Multi-image carousel with thumbnail navigation. Zoom on hover. |
+| **Product Price** | Displays original price (strikethrough if on sale), sale price, and percentage discount badge. Supports multi-currency display. |
+| **Product Rating** | Star rating (1-5) with review count. Hover to see rating breakdown. |
+| **Product Badges** | Smart badges: SALE, NEW, HOT, LIMITED, EXCLUSIVE, LOW STOCK. Color-coded and animated. |
+| **Add to Cart** | Animated button with quantity selector (+/-). Size/color selection required before adding. Cart icon bounce animation on add. |
+| **Wishlist** | Heart icon toggle with fill animation. Wishlist stored in localStorage with Zustand persistence. |
+
+### 2.3 🛒 Cart System
+
+| Feature | Description |
+|---------|-------------|
+| **Cart Sheet** | Slide-out panel (from right in LTR, from left in RTL) using Shadcn Sheet component. Shows all cart items, quantities, and totals. |
+| **Cart Item** | Product image thumbnail, name, size, color, quantity controls (+/-), price, remove button. Swipe-to-delete on mobile. |
+| **Cart Summary** | Subtotal, shipping estimate, tax, discount code input, total, and "Proceed to Checkout" button. |
+| **Cart Count Badge** | Animated badge on header cart icon showing item count. Bounces on update. |
+| **Persistent Cart** | Zustand store with localStorage persistence. Cart survives page refresh and browser restarts. |
+| **Cart API** | REST API endpoints for add, update quantity, remove item, clear cart. Syncs with database for authenticated users. |
+
+### 2.4 📂 Category System
+
+| Feature | Description |
+|---------|-------------|
+| **Category Card** | Full-bleed image with gradient overlay, category name, item count. Hover: image zoom + text shift animation. |
+| **Category Navigation** | Horizontal scrollable nav bar below header. Active category highlight. Smooth scroll to section. |
+| **Sub-categories** | Dropdown/drawer showing sub-categories within each department (e.g., Women → Dresses, Tops, Jeans, Activewear). |
+| **Category Breadcrumbs** | Breadcrumb navigation for deep category browsing. |
+
+### 2.5 ⚡ Deals System
+
+| Feature | Description |
+|---------|-------------|
+| **Deal Card** | Product image, sale price, original price, discount percentage badge, countdown timer. |
+| **Countdown Timer** | Real-time countdown (Days, Hours, Minutes, Seconds). Color changes as deadline approaches (green → yellow → red). |
+| **Deal Banner** | Full-width promotional banner with countdown, CTA button, and deal description. |
+| **Deal Progress Bar** | Shows percentage of stock sold (e.g., "78% sold") creating urgency. |
+
+### 2.6 🌍 Internationalization (i18n)
+
+| Feature | Description |
+|---------|-------------|
+| **Multi-locale Routing** | URL-based locale detection: `/en/...` for English, `/ar/...` for Arabic. |
+| **Language Switcher** | Toggle in header between 🇬🇧 EN and 🇸🇦 AR. Animated transition between languages. |
+| **RTL Support** | Full right-to-left layout when Arabic is selected. Mirrored navigation, reversed flex/grid direction, aligned text. |
+| **Complete Translations** | Every UI string translated to Arabic — zero English leakage in Arabic mode. Includes product names, category labels, button text, error messages, placeholders, etc. |
+| **Locale Detection** | Auto-detect browser language on first visit. Store preference in cookie. |
+| **Number Formatting** | Arabic numeral formatting for prices and quantities in Arabic locale. |
+| **Date Formatting** | Arabic date format for deal countdowns and product dates. |
+| **Middleware** | Next.js middleware handles locale prefix, redirects, and cookie management. |
+
+### 2.7 🎨 Theme System
+
+| Feature | Description |
+|---------|-------------|
+| **Light/Dark Mode** | Toggle between light (cream background) and dark (dark background) themes. Smooth CSS transition. |
+| **Theme Persistence** | Theme preference stored in localStorage and cookie. Respects system preference on first visit. |
+| **CSS Variables** | All colors defined as CSS custom properties for instant theme switching. |
+
+### 2.8 📱 Responsive Design
+
+| Breakpoint | Layout |
+|------------|--------|
+| **Mobile** (< 640px) | Single column, hamburger menu, bottom sticky cart bar, swipe gestures |
+| **Tablet** (640px - 1024px) | 2-column grid, collapsible sidebar, touch-optimized |
+| **Desktop** (1024px+) | 4-column grid, full header with search, hover effects, keyboard navigation |
+
+### 2.9 ♿ Accessibility (WCAG 2.1 AA)
+
+| Feature | Description |
+|---------|-------------|
+| **Semantic HTML** | Proper heading hierarchy, landmark regions (`main`, `nav`, `header`, `footer`) |
+| **ARIA Labels** | All interactive elements have descriptive aria-labels |
+| **Keyboard Navigation** | Tab order, focus trapping in modals, skip-to-content link |
+| **Screen Reader** | sr-only text for icon-only buttons, live regions for cart updates |
+| **Color Contrast** | All text meets 4.5:1 contrast ratio minimum |
+| **Touch Targets** | Minimum 44px × 44px for all interactive elements |
+| **Motion Reduction** | Respects `prefers-reduced-motion` media query |
+
+---
+
+## 3. Component Architecture
+
+### 3.1 Layout Components
+
+```
+┌─────────────────────────────────────────────────┐
+│  Header                                          │
+│  ┌──────┐ ┌──────────┐ ┌────────┐ ┌───────────┐│
+│  │ Logo │ │ Navbar   │ │Search  │ │Lang│Cart│☀️││
+│  └──────┘ └──────────┘ └────────┘ └───────────┘│
+├─────────────────────────────────────────────────┤
+│                                                  │
+│  Main Content Area                               │
+│  ┌─────────────────────────────────────────────┐│
+│  │  Hero Carousel                              ││
+│  ├─────────────────────────────────────────────┤│
+│  │  Category Grid (Bento Layout)               ││
+│  ├─────────────────────────────────────────────┤│
+│  │  Featured Products (Horizontal Scroll)      ││
+│  ├─────────────────────────────────────────────┤│
+│  │  Promo Banner                               ││
+│  ├─────────────────────────────────────────────┤│
+│  │  Flash Deals (Countdown Grid)               ││
+│  ├─────────────────────────────────────────────┤│
+│  │  New Arrivals Grid                          ││
+│  ├─────────────────────────────────────────────┤│
+│  │  Best Sellers Grid                          ││
+│  ├─────────────────────────────────────────────┤│
+│  │  Brand Marquee                              ││
+│  ├─────────────────────────────────────────────┤│
+│  │  Department Hub                             ││
+│  ├─────────────────────────────────────────────┤│
+│  │  Newsletter Signup                          ││
+│  └─────────────────────────────────────────────┘│
+│                                                  │
+├─────────────────────────────────────────────────┤
+│  Footer (Sticky Bottom)                          │
+│  Links │ Newsletter │ Social │ Copyright         │
+└─────────────────────────────────────────────────┘
+```
+
+### 3.2 Header Component Breakdown
+
+```
+Header
+├── Logo (links to homepage)
+├── Navbar
+│   ├── Women (dropdown: Dresses, Tops, Jeans, Activewear, Lingerie)
+│   ├── Men (dropdown: Shirts, Pants, Suits, Activewear, Underwear)
+│   ├── Kids (dropdown: Girls, Boys, Baby, School Wear)
+│   ├── Accessories (dropdown: Bags, Jewelry, Watches, Sunglasses)
+│   ├── Shoes (dropdown: Heels, Sneakers, Boots, Sandals)
+│   └── Beauty (dropdown: Skincare, Makeup, Fragrance, Hair)
+├── SearchBar
+│   ├── Search Input (with debounce)
+│   └── Autocomplete Dropdown
+├── LanguageSwitcher (EN 🇬🇧 / AR 🇸🇦)
+├── ThemeToggle (☀️ / 🌙)
+├── WishlistButton (❤️ with count)
+└── CartButton (🛒 with count badge)
+    └── CartSheet (slide-out panel)
+```
+
+### 3.3 Product Card Anatomy
+
+```
+┌─────────────────────┐
+│  ┌───────┐    ❤️     │  ← Image + Wishlist toggle
+│  │       │   SALE   │  ← Badge overlay
+│  │ Image │  -30%    │
+│  │       │          │
+│  └───────┘          │
+│  Brand Name          │  ← Muted text
+│  Product Name        │  ← Bold text
+│  ★★★★☆ (128)        │  ← Rating + review count
+│  $59.99  $89.99     │  ← Sale price + original
+│  ┌─────────────────┐│
+│  │  Add to Cart    ││  ← CTA button
+│  └─────────────────┘│
+└─────────────────────┘
+```
+
+### 3.4 Cart Sheet Anatomy
+
+```
+┌──────────────────────────┐
+│  Shopping Cart (3)    ✕   │  ← Title + Close button
+├──────────────────────────┤
+│  ┌───┐                   │
+│  │ 📷│ Product Name      │  ← Cart Item 1
+│  └───┘ Size: M | Qty: -1+│
+│        $59.99     🗑️     │
+├──────────────────────────┤
+│  ┌───┐                   │
+│  │ 📷│ Product Name      │  ← Cart Item 2
+│  └───┘ Size: S | Qty: -2+│
+│        $39.99     🗑️     │
+├──────────────────────────┤
+│  Subtotal      $139.97   │
+│  Shipping       Free     │
+│  ─────────────────────── │
+│  Total         $139.97   │
+│  ┌──────────────────────┐│
+│  │  Proceed to Checkout ││
+│  └──────────────────────┘│
+│  ┌──────────────────────┐│
+│  │  Enter Promo Code    ││
+│  └──────────────────────┘│
+└──────────────────────────┘
+```
+
+---
+
+## 4. Data Models
+
+### 4.1 Prisma Schema
+
+```prisma
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  nameAr      String?           // Arabic name
+  description String
+  descriptionAr String?         // Arabic description
+  price       Float
+  salePrice   Float?            // Nullable = not on sale
+  brand       String
+  images      String            // Comma-separated image URLs
+  category    String            // women, men, kids, accessories, shoes, beauty
+  subcategory String?           // dresses, tops, jeans, etc.
+  sizes       String            // Comma-separated: XS,S,M,L,XL,XXL
+  colors      String            // Comma-separated: Black,White,Red
+  rating      Float    @default(0)
+  reviewCount Int      @default(0)
+  inStock     Boolean  @default(true)
+  stockCount  Int      @default(100)
+  isFeatured  Boolean  @default(false)
+  isNew       Boolean  @default(false)
+  isBestSeller Boolean @default(false)
+  tags        String?           // Comma-separated tags
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Category {
+  id          String  @id @default(cuid())
+  name        String
+  nameAr      String?           // Arabic name
+  slug        String  @unique
+  image       String            // Category image URL
+  description String?
+  descriptionAr String?
+  order       Int     @default(0)
+  isActive    Boolean @default(true)
+}
+
+model Deal {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  title       String
+  titleAr     String?           // Arabic title
+  discountPercent Int
+  startsAt    DateTime
+  endsAt      DateTime
+  isActive    Boolean  @default(true)
+  maxQuantity Int?              // Max sale quantity
+  soldCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model CartItem {
+  id          String  @id @default(cuid())
+  userId      String?           // Null for guest carts
+  sessionId   String?           // For guest identification
+  productId   String
+  product     Product @relation(fields: [productId], references: [id])
+  quantity    Int     @default(1)
+  size        String?
+  color       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+```
+
+---
+
+## 5. API Routes
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/api/products` | List products with filters (category, search, sort, page) |
+| `GET` | `/api/products?featured=true` | Get featured products |
+| `GET` | `/api/products?new=true` | Get new arrivals |
+| `GET` | `/api/products?bestSeller=true` | Get best sellers |
+| `GET` | `/api/categories` | List all categories |
+| `GET` | `/api/deals` | List active deals |
+| `GET` | `/api/cart` | Get current user's cart |
+| `POST` | `/api/cart` | Add item to cart |
+| `PATCH` | `/api/cart` | Update cart item quantity |
+| `DELETE` | `/api/cart` | Remove item from cart |
+| `GET` | `/api/auth/[...nextauth]` | NextAuth.js authentication |
+
+---
+
+## 6. i18n Translation Structure
+
+### English (`en/translation.json`) — Keys:
+
+```json
+{
+  "common": {
+    "search": "Search...",
+    "addToCart": "Add to Cart",
+    "buyNow": "Buy Now",
+    "viewAll": "View All",
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Try Again",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "filter": "Filter",
+    "sort": "Sort",
+    "clearAll": "Clear All"
+  },
+  "nav": {
+    "home": "Home",
+    "women": "Women",
+    "men": "Men",
+    "kids": "Kids",
+    "accessories": "Accessories",
+    "shoes": "Shoes",
+    "beauty": "Beauty",
+    "sale": "Sale",
+    "newArrivals": "New Arrivals"
+  },
+  "hero": {
+    "title": "Fashion Reimagined",
+    "subtitle": "Discover Your Unique Style",
+    "cta": "Shop Now",
+    "secondaryCta": "Explore Collections"
+  },
+  "categories": {
+    "title": "Shop by Category",
+    "subtitle": "Find exactly what you're looking for",
+    "women": "Women",
+    "men": "Men",
+    "kids": "Kids",
+    "accessories": "Accessories",
+    "shoes": "Shoes",
+    "beauty": "Beauty",
+    "sportswear": "Sportswear",
+    "luxury": "Luxury"
+  },
+  "products": {
+    "featured": "Featured Products",
+    "newArrivals": "New Arrivals",
+    "bestSellers": "Best Sellers",
+    "related": "You May Also Like",
+    "price": "Price",
+    "salePrice": "Sale Price",
+    "off": "OFF",
+    "size": "Size",
+    "color": "Color",
+    "quantity": "Quantity",
+    "inStock": "In Stock",
+    "outOfStock": "Out of Stock",
+    "lowStock": "Only {count} left!",
+    "reviews": "{count} Reviews",
+    "noReviews": "No reviews yet",
+    "addedToCart": "Added to cart!",
+    "addedToWishlist": "Added to wishlist!"
+  },
+  "deals": {
+    "title": "Flash Deals",
+    "subtitle": "Limited time offers you can't miss",
+    "endsIn": "Ends in",
+    "days": "Days",
+    "hours": "Hours",
+    "minutes": "Minutes",
+    "seconds": "Seconds",
+    "sold": "{percent}% Sold",
+    "almostGone": "Almost Gone!",
+    "dealOfTheDay": "Deal of the Day"
+  },
+  "cart": {
+    "title": "Shopping Cart",
+    "empty": "Your cart is empty",
+    "emptyMessage": "Looks like you haven't added anything yet",
+    "startShopping": "Start Shopping",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "free": "Free",
+    "tax": "Tax",
+    "total": "Total",
+    "checkout": "Proceed to Checkout",
+    "promoCode": "Enter Promo Code",
+    "apply": "Apply",
+    "removeItem": "Remove item",
+    "items": "{count} items"
+  },
+  "newsletter": {
+    "title": "Stay in the Loop",
+    "subtitle": "Subscribe for exclusive offers, new arrivals, and style inspiration",
+    "placeholder": "Enter your email",
+    "subscribe": "Subscribe",
+    "success": "Welcome! Check your inbox for a surprise.",
+    "error": "Something went wrong. Please try again."
+  },
+  "footer": {
+    "shop": "Shop",
+    "company": "Company",
+    "support": "Support",
+    "aboutUs": "About Us",
+    "careers": "Careers",
+    "press": "Press",
+    "contactUs": "Contact Us",
+    "faq": "FAQ",
+    "shipping": "Shipping & Returns",
+    "sizeGuide": "Size Guide",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "followUs": "Follow Us",
+    "rights": "All rights reserved."
+  },
+  "departments": {
+    "title": "AI-Powered Departments",
+    "subtitle": "Personalized style recommendations powered by AI",
+    "explore": "Explore Department",
+    "aiSuggestion": "AI Style Pick"
+  },
+  "brands": {
+    "title": "Trusted Brands",
+    "subtitle": "Shop from the world's leading fashion brands"
+  }
+}
+```
+
+### Arabic (`ar/translation.json`) — Full RTL Translations:
+
+```json
+{
+  "common": {
+    "search": "بحث...",
+    "addToCart": "أضف إلى السلة",
+    "buyNow": "اشترِ الآن",
+    "viewAll": "عرض الكل",
+    "loading": "جارٍ التحميل...",
+    "error": "حدث خطأ ما",
+    "retry": "حاول مجدداً",
+    "close": "إغلاق",
+    "back": "رجوع",
+    "next": "التالي",
+    "previous": "السابق",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "filter": "تصفية",
+    "sort": "ترتيب",
+    "clearAll": "مسح الكل"
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "women": "النساء",
+    "men": "الرجال",
+    "kids": "الأطفال",
+    "accessories": "الإكسسوارات",
+    "shoes": "الأحذية",
+    "beauty": "الجمال",
+    "sale": "تخفيضات",
+    "newArrivals": "وصل حديثاً"
+  },
+  "hero": {
+    "title": "الموضة بإعادة تصور",
+    "subtitle": "اكتشفي أسلوبك الفريد",
+    "cta": "تسوّقي الآن",
+    "secondaryCta": "استكشفي المجموعات"
+  },
+  "categories": {
+    "title": "تسوّقي حسب الفئة",
+    "subtitle": "اعثري على ما تبحثين عنه بالضبط",
+    "women": "النساء",
+    "men": "الرجال",
+    "kids": "الأطفال",
+    "accessories": "الإكسسوارات",
+    "shoes": "الأحذية",
+    "beauty": "الجمال",
+    "sportswear": "الملابس الرياضية",
+    "luxury": "الفخامة"
+  },
+  "products": {
+    "featured": "منتجات مميزة",
+    "newArrivals": "وصل حديثاً",
+    "bestSellers": "الأكثر مبيعاً",
+    "related": "قد يعجبك أيضاً",
+    "price": "السعر",
+    "salePrice": "سعر التخفيض",
+    "off": "خصم",
+    "size": "المقاس",
+    "color": "اللون",
+    "quantity": "الكمية",
+    "inStock": "متوفر",
+    "outOfStock": "نفذت الكمية",
+    "lowStock": "بقي {count} فقط!",
+    "reviews": "{count} تقييم",
+    "noReviews": "لا توجد تقييمات بعد",
+    "addedToCart": "تمت الإضافة إلى السلة!",
+    "addedToWishlist": "تمت الإضافة إلى المفضلة!"
+  },
+  "deals": {
+    "title": "عروض فلاش",
+    "subtitle": "عروض لفترة محدودة لا تفوّتيها",
+    "endsIn": "ينتهي في",
+    "days": "أيام",
+    "hours": "ساعات",
+    "minutes": "دقائق",
+    "seconds": "ثوانٍ",
+    "sold": "تم بيع {percent}%",
+    "almostGone": "شارفت على النفاد!",
+    "dealOfTheDay": "صفقة اليوم"
+  },
+  "cart": {
+    "title": "سلة التسوق",
+    "empty": "سلتك فارغة",
+    "emptyMessage": "يبدو أنك لم تضيفي أي شيء بعد",
+    "startShopping": "ابدئي التسوق",
+    "subtotal": "المجموع الفرعي",
+    "shipping": "الشحن",
+    "free": "مجاني",
+    "tax": "الضريبة",
+    "total": "المجموع",
+    "checkout": "المتابعة إلى الدفع",
+    "promoCode": "أدخل رمز الخصم",
+    "apply": "تطبيق",
+    "removeItem": "إزالة المنتج",
+    "items": "{count} منتج"
+  },
+  "newsletter": {
+    "title": "ابقَ على اطلاع",
+    "subtitle": "اشترك للحصول على عروض حصرية ووصول مبكر وأفكار أناقة",
+    "placeholder": "أدخل بريدك الإلكتروني",
+    "subscribe": "اشترك",
+    "success": "مرحباً! تحقق من بريدك الوارد للحصول على مفاجأة.",
+    "error": "حدث خطأ ما. يرجى المحاولة مرة أخرى."
+  },
+  "footer": {
+    "shop": "تسوّقي",
+    "company": "الشركة",
+    "support": "الدعم",
+    "aboutUs": "من نحن",
+    "careers": "وظائف",
+    "press": "صحافة",
+    "contactUs": "اتصل بنا",
+    "faq": "الأسئلة الشائعة",
+    "shipping": "الشحن والإرجاع",
+    "sizeGuide": "دليل المقاسات",
+    "privacy": "سياسة الخصوصية",
+    "terms": "شروط الخدمة",
+    "followUs": "تابعنا",
+    "rights": "جميع الحقوق محفوظة."
+  },
+  "departments": {
+    "title": "أقسام مدعومة بالذكاء الاصطناعي",
+    "subtitle": "توصيات أناقة مخصصة مدعومة بالذكاء الاصطناعي",
+    "explore": "استكشفي القسم",
+    "aiSuggestion": "اختيار الذكاء الاصطناعي"
+  },
+  "brands": {
+    "title": "علامات تجارية موثوقة",
+    "subtitle": "تسوّقي من أبرز علامات الأزياء العالمية"
+  }
+}
+```
+
+---
+
+## 7. Animation Specification
+
+| Element | Animation | Library |
+|---------|-----------|---------|
+| Hero Carousel | Slide + Parallax fade | Framer Motion |
+| Category Cards | Scale on hover + Image zoom | CSS + Framer Motion |
+| Product Cards | Fade in on scroll + Hover lift | Framer Motion (IntersectionObserver) |
+| Add to Cart | Button scale bounce + Cart icon shake | Framer Motion |
+| Countdown Timer | Number flip animation | CSS transitions |
+| Brand Marquee | Infinite scroll (CSS keyframes) | CSS animation |
+| Page Sections | Staggered reveal on scroll | Framer Motion variants |
+| Cart Sheet | Slide in from right (LTR) / left (RTL) | Shadcn Sheet + Framer Motion |
+| Language Switch | Fade transition | CSS transition |
+| Toast Notifications | Slide in + Fade out | Shadcn Toast |
+| Skeleton Loaders | Pulse shimmer | CSS animation |
+| Wishlist Heart | Fill + Scale animation | Framer Motion |
+
+---
+
+## 8. Performance Targets
+
+| Metric | Target |
+|--------|--------|
+| First Contentful Paint | < 1.5s |
+| Largest Contentful Paint | < 2.5s |
+| Time to Interactive | < 3.5s |
+| Cumulative Layout Shift | < 0.1 |
+| Lighthouse Score | > 90 |
+
+### Performance Strategies
+- **Image Optimization:** Next.js `<Image>` with WebP, lazy loading, blur placeholders
+- **Code Splitting:** Dynamic imports for heavy components (Cart, QuickView)
+- **Caching:** Local memory caching for API responses, ISR for product pages
+- **Bundle Size:** Tree-shaking, only import needed Radix primitives
+- **Skeleton Loading:** Instant feedback with shimmer placeholders
+
+---
+
+## 9. Technology Stack
+
+| Category | Technology |
+|----------|------------|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript 5 |
+| Styling | Tailwind CSS 4 + Shadcn UI |
+| Database | Prisma ORM + SQLite |
+| Auth | NextAuth.js v4 |
+| State | Zustand (cart, wishlist) |
+| Animations | Framer Motion |
+| Icons | Lucide React |
+| i18n | Next.js [locale] routing + JSON dictionaries |
+| API | Next.js Route Handlers (REST) |
+
+---
+
+*This specification represents the complete vision for Persona — Fashion Reimagined. Every component, feature, and interaction is designed to deliver a premium, accessible, and culturally-aware shopping experience.*

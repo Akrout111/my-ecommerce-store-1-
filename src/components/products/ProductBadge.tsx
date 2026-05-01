@@ -1,40 +1,46 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
-type BadgeType = "bestSeller" | "new" | "sale" | "limited";
+type BadgeType = "SALE" | "NEW" | "HOT" | "LIMITED" | "EXCLUSIVE" | "LOW_STOCK";
 
 interface ProductBadgeProps {
   type: BadgeType;
-  label?: string;
-  className?: string;
+  text?: string;
 }
 
-const badgeStyles: Record<BadgeType, string> = {
-  bestSeller: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-  new: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  sale: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
-  limited: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
+const badgeStyles: Record<BadgeType, { bg: string; text: string; pulse: boolean }> = {
+  SALE: { bg: "#E8A0BF", text: "#FFFFFF", pulse: false },
+  NEW: { bg: "#C9A96E", text: "#0F0F0F", pulse: false },
+  HOT: { bg: "#DC2626", text: "#FFFFFF", pulse: true },
+  LIMITED: { bg: "#EA580C", text: "#FFFFFF", pulse: false },
+  EXCLUSIVE: { bg: "#7C3AED", text: "#FFFFFF", pulse: false },
+  LOW_STOCK: { bg: "#D97706", text: "#FFFFFF", pulse: false },
 };
 
 const defaultLabels: Record<BadgeType, string> = {
-  bestSeller: "Best Seller",
-  new: "New",
-  sale: "Sale",
-  limited: "Limited",
+  SALE: "SALE",
+  NEW: "NEW",
+  HOT: "HOT",
+  LIMITED: "LIMITED",
+  EXCLUSIVE: "EXCLUSIVE",
+  LOW_STOCK: "LOW STOCK",
 };
 
-export function ProductBadge({ type, label, className }: ProductBadgeProps) {
+export function ProductBadge({ type, text }: ProductBadgeProps) {
+  const style = badgeStyles[type];
+  const label = text || defaultLabels[type];
+
   return (
-    <Badge
-      className={cn(
-        "px-2 py-0.5 text-xs font-semibold border-0",
-        badgeStyles[type],
-        className
-      )}
+    <motion.span
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+        style.pulse ? "animate-pulse" : ""
+      }`}
+      style={{ backgroundColor: style.bg, color: style.text }}
     >
-      {label ?? defaultLabels[type]}
-    </Badge>
+      {label}
+    </motion.span>
   );
 }

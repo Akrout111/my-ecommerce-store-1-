@@ -1,31 +1,19 @@
 "use client";
 
-import { useLanguageStore } from "@/store/language-store";
-import enTranslations from "@/i18n/locales/en/translation.json";
-import arTranslations from "@/i18n/locales/ar/translation.json";
-import { Button } from "@/components/ui/button";
-
-function getNestedValue(obj: Record<string, unknown>, path: string): string {
-  return path.split(".").reduce((acc: unknown, part) => {
-    if (acc && typeof acc === "object") return (acc as Record<string, unknown>)[part];
-    return acc;
-  }, obj) as string ?? path;
-}
+import { Globe } from "lucide-react";
+import { useLanguage } from "@/components/ecommerce/language-provider";
 
 export function LanguageSwitcher() {
-  const { language, toggleLanguage } = useLanguageStore();
-  const translations = language === "ar" ? arTranslations : enTranslations;
-  const t = (key: string) => getNestedValue(translations, key);
+  const { language, toggleLanguage } = useLanguage();
 
   return (
-    <Button
-      variant="ghost"
-      size="sm"
+    <button
       onClick={toggleLanguage}
-      className="h-9 gap-1.5 px-3 text-sm font-medium text-foreground hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400"
-      aria-label="Toggle language"
+      className="flex items-center gap-1 text-xs font-medium hover:text-primary transition-colors"
+      aria-label={`Switch language to ${language === "en" ? "Arabic" : "English"}`}
     >
-      <span className="text-base">{language === "en" ? "عربي" : "EN"}</span>
-    </Button>
+      <Globe className="h-3.5 w-3.5" />
+      <span>{language === "en" ? "🇬🇧 EN" : "🇸🇦 عربي"}</span>
+    </button>
   );
 }

@@ -1,139 +1,175 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselPrevious,
-  CarouselNext,
-} from "@/components/ui/carousel";
-import type { CarouselApi } from "@/components/ui/carousel";
-import { useLanguageStore } from "@/store/language-store";
-import enTranslations from "@/i18n/locales/en/translation.json";
-import arTranslations from "@/i18n/locales/ar/translation.json";
-
-function getNestedValue(obj: Record<string, unknown>, path: string): string {
-  return path.split(".").reduce((acc: unknown, part) => {
-    if (acc && typeof acc === "object") return (acc as Record<string, unknown>)[part];
-    return acc;
-  }, obj) as string ?? path;
-}
+import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useLanguage } from "@/components/ecommerce/language-provider";
+import { COLORS } from "@/lib/constants";
 
 const slides = [
   {
-    titleKey: "hero.slide1Title",
-    subtitleKey: "hero.slide1Subtitle",
-    ctaKey: "hero.slide1Cta",
-    gradient: "from-emerald-600 to-teal-700",
-    emoji: "☀️",
+    bgGradient: "from-[#FAF8F5] via-[#F5EFE6] to-[#E8DCC8]",
+    darkGradient: "from-[#0F0F0F] via-[#1A1510] to-[#2A2015]",
+    titleKey: "hero.title",
+    subtitleKey: "hero.subtitle",
+    ctaKey: "hero.cta",
+    secondaryCtaKey: "hero.secondaryCta",
+    accent: COLORS.gold,
   },
   {
-    titleKey: "hero.slide2Title",
-    subtitleKey: "hero.slide2Subtitle",
-    ctaKey: "hero.slide2Cta",
-    gradient: "from-amber-500 to-orange-600",
-    emoji: "💻",
+    bgGradient: "from-[#1A1510] via-[#0F0F0F] to-[#1A1A1A]",
+    darkGradient: "from-[#1A1510] via-[#0F0F0F] to-[#1A1A1A]",
+    titleKey: "nav.men",
+    subtitleKey: "hero.subtitle",
+    ctaKey: "hero.cta",
+    secondaryCtaKey: "hero.secondaryCta",
+    accent: COLORS.gold,
+    customTitle: "Men's Collection",
+    customTitleAr: "مجموعة الرجال",
   },
   {
-    titleKey: "hero.slide3Title",
-    subtitleKey: "hero.slide3Subtitle",
-    ctaKey: "hero.slide3Cta",
-    gradient: "from-teal-500 to-cyan-600",
-    emoji: "🚚",
+    bgGradient: "from-[#2A1525] via-[#1A0F1A] to-[#0F0F0F]",
+    darkGradient: "from-[#2A1525] via-[#1A0F1A] to-[#0F0F0F]",
+    titleKey: "nav.sale",
+    subtitleKey: "hero.subtitle",
+    ctaKey: "hero.cta",
+    secondaryCtaKey: "hero.secondaryCta",
+    accent: COLORS.rose,
+    customTitle: "Sale — Up to 50% Off",
+    customTitleAr: "تخفيضات — حتى 50%",
   },
 ];
 
 export function HeroSection() {
-  const [api, setApi] = useState<CarouselApi>();
-  const [current, setCurrent] = useState(0);
-  const { language, isRTL } = useLanguageStore();
-  const translations = language === "ar" ? arTranslations : enTranslations;
-  const t = (key: string) => getNestedValue(translations, key);
+  const { t, isRTL, language } = useLanguage();
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [scrollY, setScrollY] = useState(0);
 
-  const handleApiChange = useCallback((newApi: CarouselApi) => {
-    setApi(newApi);
-    if (newApi) {
-      setCurrent(newApi.selectedScrollSnap());
-    }
+  useEffect(() => {
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
-    if (!api) return;
-    const handleSelect = () => {
-      setCurrent(api.selectedScrollSnap());
-    };
-    api.on("select", handleSelect);
-    return () => {
-      api.off("select", handleSelect);
-    };
-  }, [api]);
+  const nextSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev + 1) % slides.length);
+  }, []);
 
-  // Auto-rotate every 5 seconds
+  const prevSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+  }, []);
+
+  // Auto-advance
   useEffect(() => {
-    if (!api) return;
-    const interval = setInterval(() => {
-      api.scrollNext();
-    }, 5000);
+    const interval = setInterval(nextSlide, 6000);
     return () => clearInterval(interval);
-  }, [api]);
+  }, [nextSlide]);
+
+  const slide = slides[currentSlide];
 
   return (
-    <section className="relative">
-      <Carousel
-        setApi={handleApiChange}
-        opts={{ direction: isRTL ? "rtl" : "ltr", loop: true }}
-        className="w-full"
-      >
-        <CarouselContent>
-          {slides.map((slide, index) => (
-            <CarouselItem key={index}>
-              <div
-                className={`relative flex min-h-[320px] items-center sm:min-h-[420px] lg:min-h-[500px] bg-gradient-to-r ${slide.gradient}`}
+    <section className="relative overflow-hidden" aria-label="Hero banner">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentSlide}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.6 }}
+          className={`relative min-h-[70vh] sm:min-h-[80vh] flex items-center justify-center bg-gradient-to-br ${slide.bgGradient} dark:${slide.darkGradient}`}
+        >
+          {/* Parallax decorative elements */}
+          <motion.div
+            style={{ y: scrollY * 0.3 }}
+            className="absolute inset-0 overflow-hidden pointer-events-none"
+          >
+            <div
+              className="absolute top-20 end-20 w-72 h-72 rounded-full opacity-10 blur-3xl"
+              style={{ backgroundColor: slide.accent }}
+            />
+            <div
+              className="absolute bottom-20 start-20 w-96 h-96 rounded-full opacity-5 blur-3xl"
+              style={{ backgroundColor: slide.accent }}
+            />
+          </motion.div>
+
+          {/* Content */}
+          <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
+            <motion.h1
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+              className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6"
+              style={{ color: slide.accent }}
+            >
+              {slide.customTitle
+                ? language === "ar"
+                  ? slide.customTitleAr
+                  : slide.customTitle
+                : t(slide.titleKey)}
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.6 }}
+              className="text-lg sm:text-xl text-foreground/70 mb-8 max-w-2xl mx-auto"
+            >
+              {t(slide.subtitleKey)}
+            </motion.p>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.6 }}
+              className="flex flex-wrap items-center justify-center gap-4"
+            >
+              <a
+                href="#featured"
+                className="inline-flex h-12 items-center justify-center rounded-full px-8 text-sm font-semibold text-[#0F0F0F] transition-transform hover:scale-105"
+                style={{ backgroundColor: slide.accent }}
               >
-                {/* Decorative elements */}
-                <div className="absolute inset-0 overflow-hidden">
-                  <div className="absolute -top-20 -right-20 h-80 w-80 rounded-full bg-white/10" />
-                  <div className="absolute -bottom-10 -left-10 h-60 w-60 rounded-full bg-white/10" />
-                  <div className="absolute top-1/2 right-1/4 h-40 w-40 rounded-full bg-white/5" />
-                </div>
+                {t(slide.ctaKey)}
+              </a>
+              <a
+                href="#categories"
+                className="inline-flex h-12 items-center justify-center rounded-full border-2 border-current px-8 text-sm font-semibold transition-transform hover:scale-105"
+                style={{ color: slide.accent, borderColor: slide.accent }}
+              >
+                {t(slide.secondaryCtaKey)}
+              </a>
+            </motion.div>
+          </div>
+        </motion.div>
+      </AnimatePresence>
 
-                <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
-                  <div className="max-w-2xl space-y-4 sm:space-y-6">
-                    <span className="text-4xl sm:text-5xl">{slide.emoji}</span>
-                    <h1 className="text-3xl font-bold text-white sm:text-4xl lg:text-5xl leading-tight">
-                      {t(slide.titleKey)}
-                    </h1>
-                    <p className="text-base text-white/80 sm:text-lg max-w-lg">
-                      {t(slide.subtitleKey)}
-                    </p>
-                    <Button
-                      size="lg"
-                      className="bg-white text-emerald-700 hover:bg-white/90 font-semibold px-8"
-                    >
-                      {t(slide.ctaKey)}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-        <CarouselPrevious className="left-4 bg-white/20 border-white/30 text-white hover:bg-white/30 hover:text-white" />
-        <CarouselNext className="right-4 bg-white/20 border-white/30 text-white hover:bg-white/30 hover:text-white" />
-      </Carousel>
+      {/* Navigation arrows */}
+      <button
+        onClick={prevSlide}
+        className="absolute start-4 top-1/2 -translate-y-1/2 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40 transition-colors"
+        aria-label="Previous slide"
+      >
+        <ChevronLeft className="h-6 w-6" />
+      </button>
+      <button
+        onClick={nextSlide}
+        className="absolute end-4 top-1/2 -translate-y-1/2 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40 transition-colors"
+        aria-label="Next slide"
+      >
+        <ChevronRight className="h-6 w-6" />
+      </button>
 
-      {/* Dots indicator */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-        {slides.map((_, index) => (
+      {/* Dots */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+        {slides.map((_, idx) => (
           <button
-            key={index}
-            onClick={() => api?.scrollTo(index)}
-            className={`h-2 rounded-full transition-all ${
-              current === index ? "w-8 bg-white" : "w-2 bg-white/50"
+            key={idx}
+            onClick={() => setCurrentSlide(idx)}
+            className={`h-2 rounded-full transition-all duration-300 ${
+              idx === currentSlide ? "w-8" : "w-2"
             }`}
-            aria-label={`Go to slide ${index + 1}`}
+            style={{
+              backgroundColor: idx === currentSlide ? slide.accent : "rgba(255,255,255,0.4)",
+            }}
+            aria-label={`Go to slide ${idx + 1}`}
           />
         ))}
       </div>

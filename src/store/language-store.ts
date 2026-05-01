@@ -2,7 +2,8 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Language } from "@/lib/i18n/translations";
+
+type Language = "en" | "ar";
 
 interface LanguageState {
   language: Language;
@@ -14,18 +15,18 @@ interface LanguageState {
 export const useLanguageStore = create<LanguageState>()(
   persist(
     (set) => ({
-      language: "en",
+      language: "en" as Language,
       isRTL: false,
       setLanguage: (lang: Language) =>
         set({ language: lang, isRTL: lang === "ar" }),
       toggleLanguage: () =>
         set((state) => ({
-          language: state.language === "en" ? "ar" : "en",
+          language: (state.language === "en" ? "ar" : "en") as Language,
           isRTL: state.language === "en",
         })),
     }),
     {
-      name: "shopzone-language",
+      name: "persona-language",
     }
   )
 );

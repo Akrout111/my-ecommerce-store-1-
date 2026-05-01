@@ -1,38 +1,21 @@
-export interface ProductImage {
-  id: string;
-  url: string;
-  alt: string;
-  width: number;
-  height: number;
-  isPrimary: boolean;
-}
-
-export interface ProductVariant {
-  id: string;
-  name: string;
-  value: string;
-  stock: number;
-  priceAdjustment: number;
-}
-
 export interface Product {
   id: string;
   name: string;
-  nameAr: string;
-  slug: string;
+  nameAr?: string;
   description: string;
-  descriptionAr: string;
+  descriptionAr?: string;
   price: number;
-  originalPrice?: number;
-  discount?: number;
-  currency: string;
-  images: ProductImage[];
-  variants: ProductVariant[];
-  categoryId: string;
+  salePrice?: number;
+  brand: string;
+  images: string[];
   category: string;
+  subcategory?: string;
+  sizes: string[];
+  colors: string[];
   rating: number;
   reviewCount: number;
-  stock: number;
+  inStock: boolean;
+  stockCount: number;
   isFeatured: boolean;
   isNew: boolean;
   isBestSeller: boolean;

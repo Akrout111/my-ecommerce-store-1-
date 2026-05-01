@@ -1,18 +1,9 @@
 "use client";
 
-import { useLanguageStore } from "@/store/language-store";
+import { useLanguage } from "@/components/ecommerce/language-provider";
 
-interface RTLWrapperProps {
-  children: React.ReactNode;
-  className?: string;
-}
+export function RTLWrapper({ children }: { children: React.ReactNode }) {
+  const { dir } = useLanguage();
 
-export function RTLWrapper({ children, className }: RTLWrapperProps) {
-  const { isRTL } = useLanguageStore();
-
-  return (
-    <div dir={isRTL ? "rtl" : "ltr"} className={className}>
-      {children}
-    </div>
-  );
+  return <div dir={dir}>{children}</div>;
 }

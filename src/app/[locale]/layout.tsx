@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Header } from "@/components/layout/Header";
+import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { CartSheet } from "@/components/cart/CartSheet";
 import { LanguageProvider } from "@/components/ecommerce/language-provider";
@@ -28,10 +29,10 @@ export async function generateMetadata({
   const isArabic = locale === "ar";
 
   return {
-    title: isArabic ? "شوب زون - وجهتك للتسوق الإلكتروني" : "ShopZone - Your One-Stop E-Commerce Destination",
+    title: isArabic ? "برسونا — الموضة بإعادة تصور" : "Persona — Fashion Reimagined",
     description: isArabic
-      ? "اكتشف منتجات عالية الجودة بأسعار لا تُقاوم. تسوق الإلكترونيات والأزياء والمنزل والجمال والمزيد."
-      : "Discover quality products at unbeatable prices. Shop electronics, fashion, home, beauty, and more.",
+      ? "أسلوبك. قصتك. شخصيتك. اكتشفي الأزياء الفاخرة والجمال والإكسسوارات من أبرز العلامات العالمية."
+      : "Your Style. Your Story. Your Persona. Discover luxury fashion, beauty, and accessories from the world's leading brands.",
   };
 }
 
@@ -68,7 +69,10 @@ export default async function LocaleLayout({
           <LanguageProvider>
             <div className="flex min-h-screen flex-col">
               <Header />
-              <main className="flex-1">{children}</main>
+              <Navbar />
+              <main id="main" className="flex-1">
+                {children}
+              </main>
               <Footer />
             </div>
             <CartSheet />

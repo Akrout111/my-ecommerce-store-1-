@@ -1,37 +1,30 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 import type { Product } from "@/types/product";
-import { ProductCard } from "./ProductCard";
+import { ProductCard } from "@/components/products/ProductCard";
 
 interface ProductGridProps {
   products: Product[];
-  columns?: 2 | 3 | 4;
   onQuickView?: (product: Product) => void;
-  className?: string;
 }
 
-const columnClasses: Record<number, string> = {
-  2: "grid-cols-2 md:grid-cols-2",
-  3: "grid-cols-2 md:grid-cols-3",
-  4: "grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08 } },
 };
 
-export function ProductGrid({
-  products,
-  columns = 4,
-  onQuickView,
-  className,
-}: ProductGridProps) {
+export function ProductGrid({ products, onQuickView }: ProductGridProps) {
   return (
-    <div className={cn("grid gap-4", columnClasses[columns], className)}>
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6"
+    >
       {products.map((product) => (
-        <ProductCard
-          key={product.id}
-          product={product}
-          onQuickView={onQuickView}
-        />
+        <ProductCard key={product.id} product={product} onQuickView={onQuickView} />
       ))}
-    </div>
+    </motion.div>
   );
 }

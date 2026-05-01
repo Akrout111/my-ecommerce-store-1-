@@ -1,25 +1,16 @@
+import type { Product } from "./product";
+
 export interface Deal {
   id: string;
+  productId: string;
+  product?: Product;
   title: string;
-  titleAr: string;
-  description: string;
-  descriptionAr: string;
-  image: string;
-  discountPercentage: number;
-  originalPrice: number;
-  dealPrice: number;
-  currency: string;
-  startDate: string;
-  endDate: string;
-  totalStock: number;
-  soldStock: number;
+  titleAr?: string;
+  discountPercent: number;
+  startsAt: string;
+  endsAt: string;
   isActive: boolean;
-  isFeatured: boolean;
-  badge: string;
-  badgeAr: string;
-}
-
-export interface FlashDeal extends Deal {
-  timeRemaining: number;
-  isExpiring: boolean;
+  maxQuantity?: number;
+  soldCount: number;
+  createdAt: string;
 }

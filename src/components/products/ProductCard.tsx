@@ -1,114 +1,182 @@
 "use client";
 
-import { ShoppingBag, Eye } from "lucide-react";
 import { motion } from "framer-motion";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ProductPrice } from "./ProductPrice";
-import { ProductRating } from "./ProductRating";
-import { ProductBadge } from "./ProductBadge";
-import { AddToCartButton } from "./AddToCartButton";
-import { WishlistButton } from "./WishlistButton";
+import { Heart, Star, ShoppingBag } from "lucide-react";
+import { useLanguage } from "@/components/ecommerce/language-provider";
+import { useCartStore } from "@/store/cart-store";
+import { useWishlistStore } from "@/store/wishlist-store";
+import { ProductBadge } from "@/components/products/ProductBadge";
+import { COLORS } from "@/lib/constants";
 import type { Product } from "@/types/product";
-import { useLanguageStore } from "@/store/language-store";
-import enTranslations from "@/i18n/locales/en/translation.json";
-import arTranslations from "@/i18n/locales/ar/translation.json";
-import { cn } from "@/lib/utils";
-
-function getNestedValue(obj: Record<string, unknown>, path: string): string {
-  return path.split(".").reduce((acc: unknown, part) => {
-    if (acc && typeof acc === "object") return (acc as Record<string, unknown>)[part];
-    return acc;
-  }, obj) as string ?? path;
-}
 
 interface ProductCardProps {
   product: Product;
   onQuickView?: (product: Product) => void;
-  className?: string;
+  variant?: "default" | "compact";
 }
 
-const categoryColors: Record<string, string> = {
-  electronics: "from-cyan-500 to-teal-600",
-  fashion: "from-pink-500 to-rose-600",
-  home: "from-amber-500 to-orange-600",
-  beauty: "from-purple-500 to-fuchsia-600",
-  sports: "from-emerald-500 to-green-600",
-  books: "from-yellow-500 to-amber-600",
-  toys: "from-red-500 to-pink-600",
-  groceries: "from-lime-500 to-green-600",
-};
+export function ProductCard({ product, onQuickView, variant = "default" }: ProductCardProps) {
+  const { t, language, formatCurrency } = useLanguage();
+  const { addItem, openCart } = useCartStore();
+  const { toggleItem, isInWishlist } = useWishlistStore();
+  const wishlisted = isInWishlist(product.id);
 
-export function ProductCard({ product, onQuickView, className }: ProductCardProps) {
-  const { language, isRTL } = useLanguageStore();
-  const translations = language === "ar" ? arTranslations : enTranslations;
-  const t = (key: string) => getNestedValue(translations, key);
-
-  const name = language === "ar" ? product.nameAr : product.name;
-  const gradientClass = categoryColors[product.category?.toLowerCase()] ?? "from-emerald-500 to-teal-600";
-
-  const getBadgeType = () => {
-    if (product.isBestSeller) return "bestSeller" as const;
-    if (product.isNew) return "new" as const;
-    if (product.discount && product.discount > 0) return "sale" as const;
-    return null;
+  const handleAddToCart = () => {
+    addItem({
+      id: `${product.id}-${Date.now()}`,
+      productId: product.id,
+      product,
+      quantity: 1,
+      size: product.sizes[0],
+      color: product.colors[0],
+      price: product.salePrice ? product.price : product.price,
+      totalPrice: product.salePrice ? product.price : product.price,
+    });
+    openCart();
   };
 
-  const badgeType = getBadgeType();
+  const handleWishlist = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleItem(product.id);
+  };
+
+  const discountPercent = product.salePrice
+    ? Math.round(((product.salePrice - product.price) / product.salePrice) * 100)
+    : 0;
+
+  const displayName = language === "ar" && product.nameAr ? product.nameAr : product.name;
+
+  if (variant === "compact") {
+    return (
+      <div className="flex items-start gap-3">
+        <div
+          className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center text-2xl shrink-0"
+        >
+          {product.category === "women" || product.category === "beauty"
+            ? "👗"
+            : product.category === "men" || product.category === "shoes"
+            ? "🧥"
+            : product.category === "kids"
+            ? "🧒"
+            : "💍"}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-muted-foreground">{product.brand}</p>
+          <p className="text-sm font-medium truncate">{displayName}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-sm font-bold" style={{ color: COLORS.gold }}>
+              {formatCurrency(product.price)}
+            </span>
+            {product.salePrice && (
+              <span className="text-xs text-muted-foreground line-through">
+                {formatCurrency(product.salePrice)}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
       whileHover={{ y: -4 }}
-      transition={{ duration: 0.2 }}
+      className="group relative rounded-2xl border border-border bg-card overflow-hidden transition-shadow hover:shadow-xl"
     >
-      <Card className={cn("group relative overflow-hidden border transition-shadow hover:shadow-lg", className)}>
-        {/* Image Placeholder */}
-        <div className={cn("relative aspect-square overflow-hidden bg-gradient-to-br", gradientClass)}>
-          <div className="flex h-full items-center justify-center">
-            <ShoppingBag className="h-12 w-12 text-white/40" />
-          </div>
+      {/* Image */}
+      <div className="relative aspect-[3/4] overflow-hidden bg-muted">
+        <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-30">
+          {product.category === "women" || product.category === "beauty"
+            ? "👗"
+            : product.category === "men"
+            ? "🧥"
+            : product.category === "shoes"
+            ? "👠"
+            : product.category === "kids"
+            ? "🧒"
+            : product.category === "accessories"
+            ? "💍"
+            : "👟"}
+        </div>
 
-          {/* Badges */}
-          {badgeType && (
-            <div className={cn("absolute top-2 flex gap-1.5", isRTL ? "right-2" : "left-2")}>
-              <ProductBadge type={badgeType} />
-            </div>
+        {/* Badges */}
+        <div className="absolute top-3 start-3 flex flex-col gap-1.5">
+          {discountPercent > 0 && <ProductBadge type="SALE" text={`${discountPercent}% ${t("products.off")}`} />}
+          {product.isNew && <ProductBadge type="NEW" />}
+          {product.isBestSeller && <ProductBadge type="HOT" />}
+          {product.stockCount <= 5 && product.inStock && <ProductBadge type="LOW_STOCK" />}
+        </div>
+
+        {/* Wishlist */}
+        <button
+          onClick={handleWishlist}
+          className="absolute top-3 end-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm hover:bg-white transition-colors"
+          aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
+        >
+          <motion.div
+            whileTap={{ scale: 1.3 }}
+            animate={{ scale: wishlisted ? [1, 1.3, 1] : 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Heart
+              className="h-4 w-4"
+              fill={wishlisted ? COLORS.rose : "none"}
+              style={{ color: wishlisted ? COLORS.rose : undefined }}
+            />
+          </motion.div>
+        </button>
+
+        {/* Quick Add overlay */}
+        <div className="absolute inset-x-0 bottom-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={handleAddToCart}
+            className="w-full flex items-center justify-center gap-2 h-10 rounded-xl text-sm font-semibold text-[#0F0F0F] transition-transform"
+            style={{ backgroundColor: COLORS.gold }}
+          >
+            <ShoppingBag className="h-4 w-4" />
+            {t("common.addToCart")}
+          </motion.button>
+        </div>
+      </div>
+
+      {/* Info */}
+      <div className="p-4">
+        <p className="text-xs text-muted-foreground mb-0.5">{product.brand}</p>
+        <h3 className="text-sm font-semibold line-clamp-1 mb-2">{displayName}</h3>
+
+        {/* Rating */}
+        <div className="flex items-center gap-1 mb-2">
+          <div className="flex items-center gap-0.5">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Star
+                key={i}
+                className="h-3 w-3"
+                fill={i < Math.floor(product.rating) ? COLORS.gold : "none"}
+                style={{ color: i < Math.floor(product.rating) ? COLORS.gold : undefined }}
+              />
+            ))}
+          </div>
+          <span className="text-xs text-muted-foreground">
+            ({product.reviewCount})
+          </span>
+        </div>
+
+        {/* Price */}
+        <div className="flex items-center gap-2">
+          <span className="text-base font-bold" style={{ color: COLORS.gold }}>
+            {formatCurrency(product.price)}
+          </span>
+          {product.salePrice && (
+            <span className="text-sm text-muted-foreground line-through">
+              {formatCurrency(product.salePrice)}
+            </span>
           )}
-
-          {/* Wishlist */}
-          <div className={cn("absolute top-2", isRTL ? "left-2" : "right-2")}>
-            <WishlistButton productId={product.id} />
-          </div>
-
-          {/* Quick View Overlay */}
-          <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20">
-            <Button
-              variant="secondary"
-              size="sm"
-              className="opacity-0 transition-opacity group-hover:opacity-100 gap-1.5"
-              onClick={() => onQuickView?.(product)}
-            >
-              <Eye className="h-4 w-4" />
-              {t("products.quickView")}
-            </Button>
-          </div>
         </div>
-
-        {/* Content */}
-        <div className="p-3 space-y-2">
-          <h3 className="line-clamp-1 text-sm font-semibold text-foreground">{name}</h3>
-
-          <ProductRating rating={product.rating} reviewCount={product.reviewCount} />
-
-          <ProductPrice
-            price={product.price}
-            originalPrice={product.originalPrice}
-            size="sm"
-          />
-
-          <AddToCartButton product={product} className="w-full" />
-        </div>
-      </Card>
+      </div>
     </motion.div>
   );
 }

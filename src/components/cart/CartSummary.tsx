@@ -1,87 +1,67 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { useState } from "react";
 import { useCartStore } from "@/store/cart-store";
-import { useLanguageStore } from "@/store/language-store";
-import enTranslations from "@/i18n/locales/en/translation.json";
-import arTranslations from "@/i18n/locales/ar/translation.json";
-import { CURRENCY_SYMBOL, FREE_SHIPPING_THRESHOLD } from "@/lib/constants";
-
-function getNestedValue(obj: Record<string, unknown>, path: string): string {
-  return path.split(".").reduce((acc: unknown, part) => {
-    if (acc && typeof acc === "object") return (acc as Record<string, unknown>)[part];
-    return acc;
-  }, obj) as string ?? path;
-}
+import { useLanguage } from "@/components/ecommerce/language-provider";
+import { COLORS } from "@/lib/constants";
 
 export function CartSummary() {
-  const { subtotal, shipping, tax, discount, total } = useCartStore();
-  const { language } = useLanguageStore();
-  const translations = language === "ar" ? arTranslations : enTranslations;
-  const t = (key: string) => getNestedValue(translations, key);
+  const { t, formatCurrency } = useLanguage();
+  const { subtotal, shipping, tax, total } = useCartStore();
+  const [promoCode, setPromoCode] = useState("");
 
-  const freeShippingProgress = Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
-  const isFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
+  const isFreeShipping = shipping === 0;
 
   return (
-    <div className="space-y-3">
-      <Separator />
-
-      {/* Free Shipping Progress */}
-      <div className="space-y-1.5">
-        <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-          <div
-            className="h-full rounded-full bg-emerald-500 transition-all duration-500"
-            style={{ width: `${freeShippingProgress}%` }}
-          />
-        </div>
-        <p className="text-xs text-muted-foreground">
-          {isFreeShipping
-            ? t("products.freeShipping") + " ✓"
-            : `${CURRENCY_SYMBOL}${(FREE_SHIPPING_THRESHOLD - subtotal).toFixed(2)} ${t("cart.freeShippingNote").replace(`$${FREE_SHIPPING_THRESHOLD}`, `$${FREE_SHIPPING_THRESHOLD}`)}`
-          }
-        </p>
+    <div className="border-t border-border p-4 space-y-3">
+      {/* Promo code */}
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={promoCode}
+          onChange={(e) => setPromoCode(e.target.value)}
+          placeholder={t("cart.promoCode")}
+          className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A96E]"
+        />
+        <button
+          className="rounded-lg border border-[#C9A96E] px-4 py-2 text-sm font-medium hover:bg-[#C9A96E] hover:text-[#0F0F0F] transition-colors"
+          style={{ color: COLORS.gold }}
+        >
+          {t("cart.apply")}
+        </button>
       </div>
-
-      <Separator />
 
       {/* Totals */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm">
+      <div className="space-y-2 text-sm">
+        <div className="flex justify-between">
           <span className="text-muted-foreground">{t("cart.subtotal")}</span>
-          <span className="font-medium">{CURRENCY_SYMBOL}{subtotal.toFixed(2)}</span>
+          <span className="font-medium">{formatCurrency(subtotal)}</span>
         </div>
-        <div className="flex items-center justify-between text-sm">
+        <div className="flex justify-between">
           <span className="text-muted-foreground">{t("cart.shipping")}</span>
-          <span className="font-medium">
-            {shipping === 0 ? t("products.freeShipping") : `${CURRENCY_SYMBOL}${shipping.toFixed(2)}`}
+          <span className="font-medium" style={{ color: isFreeShipping ? "#22C55E" : undefined }}>
+            {isFreeShipping ? t("cart.free") : formatCurrency(shipping)}
           </span>
         </div>
-        <div className="flex items-center justify-between text-sm">
+        <div className="flex justify-between">
           <span className="text-muted-foreground">{t("cart.tax")}</span>
-          <span className="font-medium">{CURRENCY_SYMBOL}{tax.toFixed(2)}</span>
+          <span className="font-medium">{formatCurrency(tax)}</span>
         </div>
-        {discount > 0 && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">{t("cart.discount")}</span>
-            <span className="font-medium text-rose-500">-{CURRENCY_SYMBOL}{discount.toFixed(2)}</span>
-          </div>
-        )}
+        <div className="flex justify-between pt-2 border-t border-border">
+          <span className="font-bold text-base">{t("cart.total")}</span>
+          <span className="font-bold text-base" style={{ color: COLORS.gold }}>
+            {formatCurrency(total)}
+          </span>
+        </div>
       </div>
 
-      <Separator />
-
-      <div className="flex items-center justify-between">
-        <span className="text-base font-bold">{t("cart.total")}</span>
-        <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
-          {CURRENCY_SYMBOL}{total.toFixed(2)}
-        </span>
-      </div>
-
-      <Button className="w-full bg-emerald-600 text-white hover:bg-emerald-700 h-11">
+      {/* Checkout */}
+      <button
+        className="w-full h-12 rounded-xl text-sm font-semibold text-[#0F0F0F] transition-transform hover:scale-[1.02]"
+        style={{ backgroundColor: COLORS.gold }}
+      >
         {t("cart.checkout")}
-      </Button>
+      </button>
     </div>
   );
 }

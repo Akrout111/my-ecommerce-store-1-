@@ -1,74 +1,51 @@
 "use client";
 
-import { useState } from "react";
-import { ShoppingCart } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useCart } from "@/hooks/use-cart";
+import { motion } from "framer-motion";
+import { ShoppingBag } from "lucide-react";
+import { useLanguage } from "@/components/ecommerce/language-provider";
+import { useCartStore } from "@/store/cart-store";
+import { COLORS } from "@/lib/constants";
 import type { Product } from "@/types/product";
-import { useLanguageStore } from "@/store/language-store";
-import enTranslations from "@/i18n/locales/en/translation.json";
-import arTranslations from "@/i18n/locales/ar/translation.json";
-import { cn } from "@/lib/utils";
-
-function getNestedValue(obj: Record<string, unknown>, path: string): string {
-  return path.split(".").reduce((acc: unknown, part) => {
-    if (acc && typeof acc === "object") return (acc as Record<string, unknown>)[part];
-    return acc;
-  }, obj) as string ?? path;
-}
 
 interface AddToCartButtonProps {
   product: Product;
-  quantity?: number;
-  variant?: string;
-  size?: "sm" | "md" | "lg" | "icon";
+  size?: string;
+  color?: string;
   className?: string;
-  showText?: boolean;
+  variant?: "default" | "outline";
 }
 
-export function AddToCartButton({
-  product,
-  quantity = 1,
-  variant: selectedVariant,
-  size = "sm",
-  className,
-  showText = true,
-}: AddToCartButtonProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const { addProduct } = useCart();
-  const { language } = useLanguageStore();
-  const translations = language === "ar" ? arTranslations : enTranslations;
-  const t = (key: string) => getNestedValue(translations, key);
+export function AddToCartButton({ product, size, color, className = "", variant = "default" }: AddToCartButtonProps) {
+  const { t } = useLanguage();
+  const { addItem, openCart } = useCartStore();
 
-  const handleAddToCart = async () => {
-    setIsLoading(true);
-    try {
-      addProduct(product, quantity, selectedVariant);
-    } finally {
-      setTimeout(() => setIsLoading(false), 300);
-    }
+  const handleClick = () => {
+    addItem({
+      id: `${product.id}-${Date.now()}`,
+      productId: product.id,
+      product,
+      quantity: 1,
+      size: size || product.sizes[0],
+      color: color || product.colors[0],
+      price: product.price,
+      totalPrice: product.price,
+    });
+    openCart();
   };
 
   return (
-    <Button
-      onClick={handleAddToCart}
-      disabled={isLoading || product.stock <= 0}
-      size={size === "icon" ? "icon" : size === "lg" ? "lg" : size === "md" ? "default" : "sm"}
-      className={cn(
-        "bg-emerald-600 text-white hover:bg-emerald-700 gap-1.5",
-        className
-      )}
+    <motion.button
+      whileTap={{ scale: 0.92 }}
+      onClick={handleClick}
+      className={`inline-flex items-center justify-center gap-2 rounded-xl h-11 px-6 text-sm font-semibold transition-all ${
+        variant === "outline"
+          ? "border-2 border-[#C9A96E] text-[#C9A96E] hover:bg-[#C9A96E] hover:text-[#0F0F0F]"
+          : "text-[#0F0F0F] hover:opacity-90"
+      } ${className}`}
+      style={variant === "default" ? { backgroundColor: COLORS.gold } : undefined}
     >
-      {isLoading ? (
-        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-      ) : (
-        <ShoppingCart className="h-4 w-4" />
-      )}
-      {showText && (
-        <span>
-          {product.stock <= 0 ? t("products.outOfStock") : t("products.addToCart")}
-        </span>
-      )}
-    </Button>
+      <ShoppingBag className="h-4 w-4" />
+      {t("common.addToCart")}
+    </motion.button>
   );
 }

@@ -1,45 +1,79 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { sampleProducts } from "@/lib/sample-data";
 
-// In-memory cart for demo purposes
-let cartItems: unknown[] = [];
+// In-memory cart store (simple implementation)
+let cartItems: Array<{
+  id: string;
+  productId: string;
+  quantity: number;
+  size?: string;
+  color?: string;
+}> = [];
 
 export async function GET() {
-  return NextResponse.json({
-    items: cartItems,
-    itemCount: cartItems.length,
-    subtotal: 0,
-    shipping: 0,
-    tax: 0,
-    discount: 0,
-    total: 0,
-    currency: "USD",
-  });
+  const itemsWithProducts = cartItems.map((item) => ({
+    ...item,
+    product: sampleProducts.find((p) => p.id === item.productId),
+  }));
+
+  return NextResponse.json({ items: itemsWithProducts });
 }
 
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    cartItems.push(body);
-    return NextResponse.json({ success: true, item: body });
-  } catch {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+export async function POST(request: NextRequest) {
+  const body = await request.json();
+  const { productId, quantity = 1, size, color } = body;
+
+  const product = sampleProducts.find((p) => p.id === productId);
+  if (!product) {
+    return NextResponse.json({ error: "Product not found" }, { status: 404 });
   }
+
+  const existing = cartItems.find(
+    (i) => i.productId === productId && i.size === size && i.color === color
+  );
+
+  if (existing) {
+    existing.quantity += quantity;
+  } else {
+    cartItems.push({
+      id: `cart-${Date.now()}`,
+      productId,
+      quantity,
+      size,
+      color,
+    });
+  }
+
+  return NextResponse.json({ success: true, items: cartItems });
 }
 
-export async function DELETE(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const itemId = searchParams.get("itemId");
+export async function PATCH(request: NextRequest) {
+  const body = await request.json();
+  const { itemId, quantity } = body;
 
-    if (itemId) {
-      cartItems = cartItems.filter((item: unknown) => (item as { id: string }).id !== itemId);
-      return NextResponse.json({ success: true });
-    }
-
-    // Clear entire cart
-    cartItems = [];
-    return NextResponse.json({ success: true, message: "Cart cleared" });
-  } catch {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  const item = cartItems.find((i) => i.id === itemId);
+  if (!item) {
+    return NextResponse.json({ error: "Item not found" }, { status: 404 });
   }
+
+  if (quantity <= 0) {
+    cartItems = cartItems.filter((i) => i.id !== itemId);
+  } else {
+    item.quantity = quantity;
+  }
+
+  return NextResponse.json({ success: true, items: cartItems });
+}
+
+export async function DELETE(request: NextRequest) {
+  const { searchParams } = request.nextUrl;
+  const itemId = searchParams.get("itemId");
+
+  if (!itemId) {
+    return NextResponse.json({ error: "itemId is required" }, { status: 400 });
+  }
+
+  cartItems = cartItems.filter((i) => i.id !== itemId);
+
+  return NextResponse.json({ success: true, items: cartItems });
 }

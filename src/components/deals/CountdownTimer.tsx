@@ -1,70 +1,73 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { cn } from "@/lib/utils";
+import { useSyncExternalStore, useCallback } from "react";
+import { useLanguage } from "@/components/ecommerce/language-provider";
+import { COLORS } from "@/lib/constants";
 
 interface CountdownTimerProps {
-  targetDate: string;
-  className?: string;
+  endDate: string;
 }
 
-interface TimeLeft {
-  days: number;
-  hours: number;
-  minutes: number;
-  seconds: number;
-}
-
-function calculateTimeLeft(targetDate: string): TimeLeft {
-  const difference = new Date(targetDate).getTime() - new Date().getTime();
-
-  if (difference <= 0) {
-    return { days: 0, hours: 0, minutes: 0, seconds: 0 };
-  }
+function calculateTimeLeft(endDate: string) {
+  const diff = new Date(endDate).getTime() - Date.now();
+  if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
 
   return {
-    days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-    hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-    minutes: Math.floor((difference / 1000 / 60) % 60),
-    seconds: Math.floor((difference / 1000) % 60),
+    days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+    hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+    minutes: Math.floor((diff / (1000 * 60)) % 60),
+    seconds: Math.floor((diff / 1000) % 60),
   };
 }
 
-export function CountdownTimer({ targetDate, className }: CountdownTimerProps) {
-  const [timeLeft, setTimeLeft] = useState<TimeLeft>(() => calculateTimeLeft(targetDate));
+function subscribe(cb: () => void) {
+  const id = setInterval(cb, 1000);
+  return () => clearInterval(id);
+}
 
-  const update = useCallback(() => {
-    setTimeLeft(calculateTimeLeft(targetDate));
-  }, [targetDate]);
+export function CountdownTimer({ endDate }: CountdownTimerProps) {
+  const { t } = useLanguage();
 
-  useEffect(() => {
-    const timer = setInterval(update, 1000);
-    return () => clearInterval(timer);
-  }, [update]);
+  const getSnapshot = useCallback(() => calculateTimeLeft(endDate), [endDate]);
+  const getServerSnapshot = useCallback(() => ({ days: 0, hours: 0, minutes: 0, seconds: 0 }), []);
+
+  const timeLeft = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
+  const totalHoursLeft = timeLeft.days * 24 + timeLeft.hours;
+  // Color: green → yellow → red as deadline approaches
+  const getColor = () => {
+    if (timeLeft.days > 2) return "#22C55E";
+    if (timeLeft.days > 1) return "#EAB308";
+    if (totalHoursLeft > 12) return "#F97316";
+    return "#EF4444";
+  };
+
+  const color = getColor();
 
   const units = [
-    { value: timeLeft.days, label: "Days" },
-    { value: timeLeft.hours, label: "Hrs" },
-    { value: timeLeft.minutes, label: "Min" },
-    { value: timeLeft.seconds, label: "Sec" },
+    { value: timeLeft.days, label: t("deals.days") },
+    { value: timeLeft.hours, label: t("deals.hours") },
+    { value: timeLeft.minutes, label: t("deals.minutes") },
+    { value: timeLeft.seconds, label: t("deals.seconds") },
   ];
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      {units.map((unit, index) => (
+    <div className="flex items-center gap-2">
+      {units.map((unit, idx) => (
         <div key={unit.label} className="flex items-center gap-2">
           <div className="flex flex-col items-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-900 text-white dark:bg-white dark:text-slate-900">
-              <span className="text-sm font-bold tabular-nums">
-                {String(unit.value).padStart(2, "0")}
-              </span>
+            <div
+              className="flex items-center justify-center w-12 h-12 rounded-lg text-lg font-bold"
+              style={{ backgroundColor: `${color}20`, color }}
+            >
+              {String(unit.value).padStart(2, "0")}
             </div>
-            <span className="mt-1 text-[10px] font-medium text-muted-foreground">
-              {unit.label}
-            </span>
+            <span className="text-[10px] text-gray-500 mt-1">{unit.label}</span>
           </div>
-          {index < units.length - 1 && (
-            <span className="text-lg font-bold text-muted-foreground -mt-4">:</span>
+          {idx < units.length - 1 && (
+            <span className="text-lg font-bold" style={{ color }}>
+              :
+            </span>
           )}
         </div>
       ))}

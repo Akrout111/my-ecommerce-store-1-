@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ShopZone - Your One-Stop E-Commerce Destination",
-  description: "Discover quality products at unbeatable prices. Shop electronics, fashion, home, beauty, and more with fast delivery.",
-  keywords: ["ShopZone", "e-commerce", "online shopping", "electronics", "fashion", "deals"],
+  title: "Persona — Fashion Reimagined",
+  description: "Your Style. Your Story. Your Persona. Discover luxury fashion, beauty, and accessories from the world's leading brands.",
+  keywords: ["Persona", "fashion", "luxury", "beauty", "accessories", "designer"],
   icons: {
     icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
   },

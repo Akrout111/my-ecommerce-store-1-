@@ -1,83 +1,89 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, CheckCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { AnimatedSection } from "@/components/shared/AnimatedSection";
-import { useLanguageStore } from "@/store/language-store";
-import enTranslations from "@/i18n/locales/en/translation.json";
-import arTranslations from "@/i18n/locales/ar/translation.json";
-
-function getNestedValue(obj: Record<string, unknown>, path: string): string {
-  return path.split(".").reduce((acc: unknown, part) => {
-    if (acc && typeof acc === "object") return (acc as Record<string, unknown>)[part];
-    return acc;
-  }, obj) as string ?? path;
-}
+import { motion, AnimatePresence } from "framer-motion";
+import { Send, CheckCircle, AlertCircle } from "lucide-react";
+import { useLanguage } from "@/components/ecommerce/language-provider";
+import { COLORS } from "@/lib/constants";
 
 export function NewsletterSection() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const { language, isRTL } = useLanguageStore();
-  const translations = language === "ar" ? arTranslations : enTranslations;
-  const t = (key: string) => getNestedValue(translations, key);
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.trim()) {
-      setIsSubscribed(true);
+    if (email.includes("@")) {
+      setStatus("success");
       setEmail("");
+      setTimeout(() => setStatus("idle"), 5000);
+    } else {
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 3000);
     }
   };
 
   return (
-    <section className="py-12 sm:py-16 bg-emerald-800 dark:bg-emerald-950">
+    <section id="newsletter" className="py-16 lg:py-24 bg-[#0F0F0F] text-[#FAF8F5]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <AnimatedSection>
-          <div className="mx-auto max-w-2xl text-center space-y-6">
-            {isSubscribed ? (
-              <div className="space-y-3">
-                <div className="flex justify-center">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-600/30">
-                    <CheckCircle className="h-8 w-8 text-emerald-300" />
-                  </div>
-                </div>
-                <h3 className="text-2xl font-bold text-white">{t("newsletter.success")}</h3>
-                <p className="text-emerald-200">{t("newsletter.successMessage")}</p>
-              </div>
-            ) : (
-              <>
-                <div className="flex justify-center">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600/30">
-                    <Mail className="h-7 w-7 text-emerald-300" />
-                  </div>
-                </div>
-                <h2 className="text-2xl font-bold text-white sm:text-3xl">
-                  {t("newsletter.title")}
-                </h2>
-                <p className="text-emerald-200">{t("newsletter.subtitle")}</p>
-                <form onSubmit={handleSubscribe} className="flex gap-2 max-w-md mx-auto">
-                  <Input
-                    type="email"
-                    placeholder={t("newsletter.placeholder")}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="h-11 flex-1 bg-white/10 border-emerald-600 text-white placeholder:text-emerald-300 focus:border-emerald-400 focus:ring-emerald-400"
-                  />
-                  <Button
-                    type="submit"
-                    className="bg-emerald-500 text-white hover:bg-emerald-400 h-11 px-6 font-semibold"
-                  >
-                    {t("newsletter.button")}
-                  </Button>
-                </form>
-                <p className="text-xs text-emerald-300/70">{t("newsletter.privacy")}</p>
-              </>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.5 }}
+          className="max-w-2xl mx-auto text-center"
+        >
+          <h2 className="text-3xl sm:text-4xl font-bold mb-3" style={{ color: COLORS.gold }}>
+            {t("newsletter.title")}
+          </h2>
+          <p className="text-gray-400 text-lg mb-8">
+            {t("newsletter.subtitle")}
+          </p>
+
+          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t("newsletter.placeholder")}
+              className="flex-1 rounded-full border border-gray-700 bg-[#1A1A1A] py-3 px-5 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#C9A96E]"
+              required
+            />
+            <button
+              type="submit"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full px-6 text-sm font-semibold text-[#0F0F0F] transition-transform hover:scale-105"
+              style={{ backgroundColor: COLORS.gold }}
+            >
+              <Send className="h-4 w-4" />
+              {t("newsletter.subscribe")}
+            </button>
+          </form>
+
+          <AnimatePresence>
+            {status === "success" && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="mt-4 flex items-center justify-center gap-2 text-sm text-green-400"
+              >
+                <CheckCircle className="h-4 w-4" />
+                {t("newsletter.success")}
+              </motion.div>
             )}
-          </div>
-        </AnimatedSection>
+            {status === "error" && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="mt-4 flex items-center justify-center gap-2 text-sm text-red-400"
+              >
+                <AlertCircle className="h-4 w-4" />
+                {t("newsletter.error")}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </div>
     </section>
   );

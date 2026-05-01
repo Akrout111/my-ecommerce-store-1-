@@ -1,53 +1,75 @@
 "use client";
 
-import { useLanguageStore } from "@/store/language-store";
-import enTranslations from "@/i18n/locales/en/translation.json";
-import arTranslations from "@/i18n/locales/ar/translation.json";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
-
-function getNestedValue(obj: Record<string, unknown>, path: string): string {
-  return path.split(".").reduce((acc: unknown, part) => {
-    if (acc && typeof acc === "object") return (acc as Record<string, unknown>)[part];
-    return acc;
-  }, obj) as string ?? path;
-}
-
-const categoryItems = [
-  { key: "categories.women", slug: "women" },
-  { key: "categories.men", slug: "men" },
-  { key: "categories.kids", slug: "kids" },
-  { key: "categories.electronics", slug: "electronics" },
-  { key: "categories.home", slug: "home" },
-  { key: "categories.beauty", slug: "beauty" },
-  { key: "categories.sports", slug: "sports" },
-  { key: "deals.flashSale", slug: "sale", isSale: true },
-];
+import Link from "next/link";
+import { useLanguage } from "@/components/ecommerce/language-provider";
+import { NAV_CATEGORIES, COLORS } from "@/lib/constants";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function Navbar() {
-  const { language } = useLanguageStore();
-  const translations = language === "ar" ? arTranslations : enTranslations;
-  const t = (key: string) => getNestedValue(translations, key);
+  const { t, isRTL } = useLanguage();
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
 
   return (
-    <ScrollArea className="w-full whitespace-nowrap">
-      <nav className="mx-auto flex max-w-7xl items-center gap-1 px-4 sm:px-6 lg:px-8 py-2">
-        {categoryItems.map((item) => (
-          <a
-            key={item.slug}
-            href={`#${item.slug}`}
-            className={cn(
-              "inline-flex items-center rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-              item.isSale
-                ? "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 dark:text-rose-400"
-                : "text-muted-foreground hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400"
-            )}
+    <nav
+      className="hidden lg:block border-b border-border/50 bg-background/95 backdrop-blur-sm sticky top-[105px] z-40"
+      aria-label="Category navigation"
+    >
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-center gap-6 h-11">
+          {NAV_CATEGORIES.map((cat) => (
+            <div
+              key={cat.key}
+              className="relative"
+              onMouseEnter={() => setHoveredCategory(cat.key)}
+              onMouseLeave={() => setHoveredCategory(null)}
+            >
+              <Link
+                href={`/#${cat.key}`}
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  hoveredCategory === cat.key ? "text-primary" : "text-muted-foreground"
+                }`}
+              >
+                {t(`nav.${cat.key}`)}
+              </Link>
+              <AnimatePresence>
+                {hoveredCategory === cat.key && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 4 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute top-full start-1/2 -translate-x-1/2 z-50 mt-2 w-48 rounded-xl border border-border bg-popover p-2 shadow-xl"
+                  >
+                    {cat.subcategories.map((sub, idx) => (
+                      <Link
+                        key={sub}
+                        href={`/#${cat.key}-${sub.toLowerCase().replace(/\s+/g, "-")}`}
+                        className="block rounded-lg px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                      >
+                        {isRTL ? cat.subcategoriesAr[idx] : sub}
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))}
+          <Link
+            href="/#deals"
+            className="text-sm font-medium text-[#E8A0BF] hover:text-[#E8A0BF]/80 transition-colors"
           >
-            {t(item.key)}
-          </a>
-        ))}
-      </nav>
-      <ScrollBar orientation="horizontal" />
-    </ScrollArea>
+            {t("nav.sale")}
+          </Link>
+          <Link
+            href="/#new-arrivals"
+            className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            style={{ color: COLORS.gold }}
+          >
+            {t("nav.newArrivals")}
+          </Link>
+        </div>
+      </div>
+    </nav>
   );
 }

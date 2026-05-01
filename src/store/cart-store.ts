@@ -56,7 +56,7 @@ export const useCartStore = create<CartState>()(
       addItem: (item: CartItem) => {
         const { items } = get();
         const existingIndex = items.findIndex(
-          (i) => i.productId === item.productId && i.selectedVariant === item.selectedVariant
+          (i) => i.productId === item.productId && i.size === item.size && i.color === item.color
         );
 
         let newItems: CartItem[];
@@ -113,7 +113,7 @@ export const useCartStore = create<CartState>()(
       removeCoupon: () => set({ couponCode: null }),
     }),
     {
-      name: "shopzone-cart",
+      name: "persona-cart",
       partialize: (state) => ({
         items: state.items,
         couponCode: state.couponCode,

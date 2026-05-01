@@ -10,6 +10,7 @@ import {
   CarouselNext,
 } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
+import { COLORS } from "@/lib/constants";
 
 interface ProductImageGalleryProps {
   images?: { url: string; alt: string }[];
@@ -18,21 +19,20 @@ interface ProductImageGalleryProps {
 }
 
 const categoryGradients: Record<string, string> = {
-  electronics: "from-cyan-500 to-teal-600",
-  fashion: "from-pink-500 to-rose-600",
-  home: "from-amber-500 to-orange-600",
-  beauty: "from-purple-500 to-fuchsia-600",
-  sports: "from-emerald-500 to-green-600",
-  books: "from-yellow-500 to-amber-600",
-  toys: "from-red-500 to-pink-600",
-  groceries: "from-lime-500 to-green-600",
+  women: "from-[#C9A96E]/40 to-[#E8A0BF]/40",
+  men: "from-[#1A1510]/60 to-[#2A2A2A]/80",
+  kids: "from-[#E8A0BF]/30 to-[#F5D5E0]/30",
+  accessories: "from-[#D4B98A]/40 to-[#C9A96E]/40",
+  shoes: "from-[#1A1A2E]/60 to-[#0F0F0F]/80",
+  beauty: "from-[#F5D5E0]/30 to-[#E8A0BF]/40",
+  sportswear: "from-[#2D5A27]/50 to-[#1A3A15]/60",
+  luxury: "from-[#C9A96E]/50 to-[#8B6914]/60",
 };
 
 export function ProductImageGallery({ images, category, className }: ProductImageGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const gradient = categoryGradients[category?.toLowerCase() ?? ""] ?? "from-emerald-500 to-teal-600";
+  const gradient = categoryGradients[category?.toLowerCase() ?? ""] ?? "from-[#C9A96E]/30 to-[#E8A0BF]/30";
 
-  // Use placeholder images if no real images
   const displayImages = images && images.length > 0
     ? images
     : [
@@ -43,7 +43,6 @@ export function ProductImageGallery({ images, category, className }: ProductImag
 
   return (
     <div className={cn("space-y-3", className)}>
-      {/* Main Image Carousel */}
       <Carousel className="w-full">
         <CarouselContent>
           {displayImages.map((image, index) => (
@@ -66,7 +65,6 @@ export function ProductImageGallery({ images, category, className }: ProductImag
         <CarouselNext className="-right-3" />
       </Carousel>
 
-      {/* Thumbnails */}
       <div className="flex gap-2">
         {displayImages.map((image, index) => (
           <button
@@ -76,7 +74,7 @@ export function ProductImageGallery({ images, category, className }: ProductImag
               "h-16 w-16 rounded-md bg-gradient-to-br overflow-hidden transition-all",
               gradient,
               selectedIndex === index
-                ? "ring-2 ring-emerald-600 ring-offset-2"
+                ? "ring-2 ring-[#C9A96E] ring-offset-2"
                 : "opacity-60 hover:opacity-100"
             )}
           >

@@ -1,32 +1,35 @@
 "use client";
 
-import type { LucideIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Diamond } from "lucide-react";
+import { COLORS } from "@/lib/constants";
+import { motion } from "framer-motion";
 
 interface EmptyStateProps {
-  icon: LucideIcon;
   title: string;
-  description: string;
+  description?: string;
   actionLabel?: string;
   onAction?: () => void;
 }
 
-export function EmptyState({ icon: Icon, title, description, actionLabel, onAction }: EmptyStateProps) {
+export function EmptyState({ title, description, actionLabel, onAction }: EmptyStateProps) {
   return (
-    <div className="flex min-h-[300px] flex-col items-center justify-center gap-4 p-8 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-        <Icon className="h-8 w-8 text-muted-foreground" />
-      </div>
-      <h3 className="text-lg font-semibold text-foreground">{title}</h3>
-      <p className="max-w-sm text-sm text-muted-foreground">{description}</p>
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex flex-col items-center justify-center py-12 text-center"
+    >
+      <Diamond className="h-16 w-16 text-muted-foreground/20 mb-4" style={{ color: `${COLORS.gold}40` }} />
+      <h3 className="text-lg font-semibold mb-1">{title}</h3>
+      {description && <p className="text-sm text-muted-foreground mb-4">{description}</p>}
       {actionLabel && onAction && (
-        <Button
+        <button
           onClick={onAction}
-          className="bg-emerald-600 text-white hover:bg-emerald-700"
+          className="inline-flex h-10 items-center justify-center rounded-full px-6 text-sm font-semibold text-[#0F0F0F]"
+          style={{ backgroundColor: COLORS.gold }}
         >
           {actionLabel}
-        </Button>
+        </button>
       )}
-    </div>
+    </motion.div>
   );
 }

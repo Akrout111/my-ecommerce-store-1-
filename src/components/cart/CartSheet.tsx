@@ -1,72 +1,90 @@
 "use client";
 
-import { ShoppingBag } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
-import { CartItem } from "./CartItem";
-import { CartSummary } from "./CartSummary";
-import { EmptyState } from "@/components/shared/EmptyState";
 import { useCartStore } from "@/store/cart-store";
-import { useLanguageStore } from "@/store/language-store";
-import enTranslations from "@/i18n/locales/en/translation.json";
-import arTranslations from "@/i18n/locales/ar/translation.json";
-
-function getNestedValue(obj: Record<string, unknown>, path: string): string {
-  return path.split(".").reduce((acc: unknown, part) => {
-    if (acc && typeof acc === "object") return (acc as Record<string, unknown>)[part];
-    return acc;
-  }, obj) as string ?? path;
-}
+import { useLanguage } from "@/components/ecommerce/language-provider";
+import { CartItem } from "@/components/cart/CartItem";
+import { CartSummary } from "@/components/cart/CartSummary";
+import { ShoppingBag, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { COLORS } from "@/lib/constants";
 
 export function CartSheet() {
+  const { t, isRTL, formatCurrency } = useLanguage();
   const { items, isOpen, closeCart, itemCount } = useCartStore();
-  const { language, isRTL } = useLanguageStore();
-  const translations = language === "ar" ? arTranslations : enTranslations;
-  const t = (key: string) => getNestedValue(translations, key);
 
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => !open && closeCart()}>
-      <SheetContent side={isRTL ? "left" : "right"} className="flex w-[350px] flex-col sm:w-[400px]">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <ShoppingBag className="h-5 w-5 text-emerald-600" />
-            {t("cart.title")}
-            {itemCount > 0 && (
-              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                {itemCount}
-              </span>
-            )}
-          </SheetTitle>
-          <SheetDescription className="sr-only">
-            Your shopping cart items
-          </SheetDescription>
-        </SheetHeader>
-
-        {items.length === 0 ? (
-          <EmptyState
-            icon={ShoppingBag}
-            title={t("cart.empty")}
-            description={t("cart.emptyMessage")}
-            actionLabel={t("cart.continueShopping")}
-            onAction={closeCart}
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Overlay */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+            onClick={closeCart}
           />
-        ) : (
-          <div className="flex flex-1 flex-col overflow-hidden">
-            <ScrollArea className="flex-1 px-4">
-              <div className="divide-y">
-                {items.map((item) => (
-                  <CartItem key={item.id} item={item} />
-                ))}
-              </div>
-            </ScrollArea>
 
-            <div className="border-t p-4">
-              <CartSummary />
+          {/* Sheet */}
+          <motion.div
+            initial={{ x: isRTL ? "-100%" : "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: isRTL ? "-100%" : "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className={`fixed top-0 bottom-0 z-50 w-full max-w-md bg-background shadow-2xl ${
+              isRTL ? "left-0" : "right-0"
+            }`}
+          >
+            <div className="flex h-full flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-border p-4">
+                <div className="flex items-center gap-2">
+                  <ShoppingBag className="h-5 w-5" style={{ color: COLORS.gold }} />
+                  <h2 className="text-lg font-bold">
+                    {t("cart.title")} ({itemCount})
+                  </h2>
+                </div>
+                <button
+                  onClick={closeCart}
+                  className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-accent transition-colors"
+                  aria-label={t("common.close")}
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Items */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
+                {items.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center">
+                    <ShoppingBag className="h-16 w-16 text-muted-foreground/30 mb-4" />
+                    <p className="text-lg font-semibold mb-1">{t("cart.empty")}</p>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {t("cart.emptyMessage")}
+                    </p>
+                    <button
+                      onClick={closeCart}
+                      className="inline-flex h-10 items-center justify-center rounded-full px-6 text-sm font-semibold text-[#0F0F0F]"
+                      style={{ backgroundColor: COLORS.gold }}
+                    >
+                      {t("cart.startShopping")}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {items.map((item) => (
+                      <CartItem key={item.id} item={item} />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Summary */}
+              {items.length > 0 && <CartSummary />}
             </div>
-          </div>
-        )}
-      </SheetContent>
-    </Sheet>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 }
