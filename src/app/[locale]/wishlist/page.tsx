@@ -45,8 +45,8 @@ export default function WishlistPage() {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {wishlistIds.map((id) => (
           <div key={id} className="rounded-2xl border border-border bg-card p-4 text-center">
-            <div className="aspect-square bg-muted rounded-lg mb-3 flex items-center justify-center text-3xl">
-              👕
+            <div className="aspect-square bg-muted rounded-lg mb-3 overflow-hidden">
+              <img src="/images/placeholder-product.svg" alt="Wishlist item" className="h-full w-full object-contain p-6" />
             </div>
             <p className="text-sm font-medium truncate">Product {id.slice(0, 8)}</p>
             <button

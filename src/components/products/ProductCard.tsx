@@ -26,14 +26,16 @@ interface ProductCardProps {
   priority?: boolean;
 }
 
-const categoryEmoji: Record<string, string> = {
-  women: "👗",
-  men: "👔",
-  kids: "🧸",
-  shoes: "👠",
-  accessories: "👜",
-  beauty: "💄",
+const categoryImageMap: Record<string, string> = {
+  women: "/images/categories/women.jpg",
+  men: "/images/categories/men.jpg",
+  kids: "/images/categories/kids.jpg",
+  shoes: "/images/categories/shoes.jpg",
+  accessories: "/images/categories/accessories.jpg",
+  beauty: "/images/categories/beauty.jpg",
 };
+
+const PLACEHOLDER_IMG = "/images/placeholder-product.svg";
 
 const colorMap: Record<string, string> = {
   black: "#111",
@@ -130,9 +132,13 @@ function QuickViewDialog({
                   sizes="(max-width: 768px) 100vw, 400px"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-6xl">
-                  {categoryEmoji[product.category] || "👕"}
-                </div>
+                <Image
+                  src={categoryImageMap[product.category] || PLACEHOLDER_IMG}
+                  alt={product.name}
+                  fill
+                  className="object-cover"
+                  sizes="400px"
+                />
               )}
             </div>
 
@@ -310,9 +316,13 @@ export function ProductCard({
               onError={() => setImageError(true)}
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-lg">
-              {categoryEmoji[product.category] || "👕"}
-            </div>
+            <Image
+              src={categoryImageMap[product.category] || PLACEHOLDER_IMG}
+              alt={product.name}
+              fill
+              className="object-cover"
+              sizes="60px"
+            />
           )}
         </div>
         <div className="min-w-0 flex-1">
@@ -357,11 +367,13 @@ export function ProductCard({
               )}
             </>
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-muted/30 to-[#C9A96E]/10">
-              <span className="text-5xl">
-                {categoryEmoji[product.category] || "👕"}
-              </span>
-            </div>
+            <Image
+              src={categoryImageMap[product.category] || PLACEHOLDER_IMG}
+              alt={product.name}
+              fill
+              className="object-cover"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            />
           )}
 
           {/* Badges */}

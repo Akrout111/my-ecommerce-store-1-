@@ -3,55 +3,56 @@
 import { motion } from "framer-motion";
 import { useLanguage } from "@/components/ecommerce/language-provider";
 import { COLORS } from "@/lib/constants";
+import Image from "next/image";
 import Link from "next/link";
 
 const categories = [
   {
     key: "women",
     gradient: "from-[#C9A96E]/80 to-[#8B6914]/90",
-    icon: "👗",
+    image: "/images/categories/women.jpg",
     size: "lg",
   },
   {
     key: "men",
     gradient: "from-[#2C2C2C]/80 to-[#0F0F0F]/90",
-    icon: "🧥",
+    image: "/images/categories/men.jpg",
     size: "wide",
   },
   {
     key: "kids",
     gradient: "from-[#E8A0BF]/70 to-[#B8709F]/90",
-    icon: "🧒",
+    image: "/images/categories/kids.jpg",
     size: "normal",
   },
   {
     key: "accessories",
     gradient: "from-[#D4B98A]/80 to-[#A08050]/90",
-    icon: "💍",
+    image: "/images/categories/accessories.jpg",
     size: "normal",
   },
   {
     key: "shoes",
     gradient: "from-[#1A1A2E]/80 to-[#0F0F0F]/90",
-    icon: "👠",
+    image: "/images/categories/shoes.jpg",
     size: "normal",
   },
   {
     key: "beauty",
     gradient: "from-[#F5D5E0]/60 to-[#E8A0BF]/80",
-    icon: "✨",
+    image: "/images/categories/beauty.jpg",
     size: "normal",
   },
   {
     key: "sportswear",
     gradient: "from-[#2D5A27]/80 to-[#1A3A15]/90",
-    icon: "🏃",
+    image: "/images/categories/sportswear.jpg",
     size: "normal",
   },
   {
     key: "luxury",
     gradient: "from-[#C9A96E]/90 to-[#8B6914]/95",
-    icon: "💎",
+    image: "/images/categories/luxury.jpg",
     size: "wide",
   },
 ];
@@ -107,10 +108,14 @@ export function CategoryGrid() {
               <div
                 className={`relative bg-gradient-to-br ${cat.gradient} flex items-end justify-start p-6 sm:p-8 min-h-[180px] sm:min-h-[220px]`}
               >
-                {/* Background icon */}
-                <span className="absolute top-4 end-4 text-5xl sm:text-7xl opacity-30 group-hover:scale-110 transition-transform duration-500">
-                  {cat.icon}
-                </span>
+                {/* Background image */}
+                <Image
+                  src={cat.image}
+                  alt={t(`categories.${cat.key}`)}
+                  fill
+                  className="object-cover opacity-60 group-hover:scale-110 group-hover:opacity-70 transition-all duration-700"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                />
 
                 {/* Hover zoom overlay */}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-500" />

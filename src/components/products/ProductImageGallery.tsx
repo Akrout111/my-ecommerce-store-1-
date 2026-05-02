@@ -55,7 +55,11 @@ export function ProductImageGallery({ images, category, className }: ProductImag
                     className="h-full w-full rounded-lg object-cover"
                   />
                 ) : (
-                  <ShoppingBag className="h-20 w-20 text-white/30" />
+                  <img
+                    src="/images/placeholder-product.svg"
+                    alt="Product placeholder"
+                    className="h-full w-full rounded-lg object-contain p-8"
+                  />
                 )}
               </div>
             </CarouselItem>
@@ -86,7 +90,7 @@ export function ProductImageGallery({ images, category, className }: ProductImag
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center">
-                <ShoppingBag className="h-5 w-5 text-white/30" />
+                <img src="/images/placeholder-product.svg" alt="Placeholder" className="h-8 w-8 object-contain" />
               </div>
             )}
           </button>

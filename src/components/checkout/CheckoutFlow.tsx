@@ -172,9 +172,13 @@ function OrderSummary({
                   sizes="60px"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-lg">
-                  👕
-                </div>
+                <Image
+                  src="/images/placeholder-product.svg"
+                  alt={item.name}
+                  fill
+                  className="object-contain p-1"
+                  sizes="60px"
+                />
               )}
             </div>
             <div className="min-w-0 flex-1">

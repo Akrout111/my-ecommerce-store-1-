@@ -239,7 +239,7 @@ export function ProductDetailClient({
                 className="absolute inset-0"
               >
                 <Image
-                  src={product.images[selectedImage] || "/placeholder.jpg"}
+                  src={product.images[selectedImage] || "/images/placeholder-product.svg"}
                   alt={product.name}
                   fill
                   className="object-cover"
@@ -293,7 +293,7 @@ export function ProductDetailClient({
                 }`}
               >
                 <Image
-                  src={img || "/placeholder.jpg"}
+                  src={img || "/images/placeholder-product.svg"}
                   alt={`${product.name} ${idx + 1}`}
                   fill
                   className="object-cover"
@@ -645,7 +645,7 @@ export function ProductDetailClient({
           <Dialog.Content className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="relative flex max-h-[90vh] max-w-[90vw] items-center justify-center">
               <Image
-                src={product.images[lightboxIndex] || "/placeholder.jpg"}
+                src={product.images[lightboxIndex] || "/images/placeholder-product.svg"}
                 alt={product.name}
                 width={800}
                 height={1000}

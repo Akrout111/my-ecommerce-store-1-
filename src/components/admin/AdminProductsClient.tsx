@@ -169,7 +169,7 @@ export function AdminProductsClient() {
                       {product.images?.[0] ? (
                         <Image src={product.images[0]} alt={product.name} fill className="object-cover" sizes="40px" />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center text-lg">👕</div>
+                        <Image src="/images/placeholder-product.svg" alt="No image" fill className="object-cover p-1" sizes="40px" />
                       )}
                     </div>
                     <div>

@@ -136,11 +136,11 @@ export function Footer() {
             <p className="text-sm text-gray-500">
               © 2025 {APP_NAME}. {t("footer.rights")}
             </p>
-            <div className="flex items-center gap-4 text-xs text-gray-500">
-              <span>Visa</span>
-              <span>Mastercard</span>
-              <span>Apple Pay</span>
-              <span>PayPal</span>
+            <div className="flex items-center gap-4">
+              <svg className="h-6 w-10" viewBox="0 0 48 32" fill="none"><rect width="48" height="32" rx="4" fill="#1A1F71"/><text x="24" y="20" textAnchor="middle" fill="white" fontSize="11" fontWeight="bold" fontFamily="sans-serif">VISA</text></svg>
+              <svg className="h-6 w-10" viewBox="0 0 48 32" fill="none"><rect width="48" height="32" rx="4" fill="#EB001B"/><circle cx="18" cy="16" r="10" fill="#EB001B"/><circle cx="30" cy="16" r="10" fill="#F79E1B" opacity="0.8"/></svg>
+              <svg className="h-6 w-10" viewBox="0 0 48 32" fill="none"><rect width="48" height="32" rx="4" fill="#000"/><text x="24" y="18" textAnchor="middle" fill="white" fontSize="7" fontWeight="600" fontFamily="sans-serif">Pay</text></svg>
+              <svg className="h-6 w-10" viewBox="0 0 48 32" fill="none"><rect width="48" height="32" rx="4" fill="#003087"/><text x="24" y="20" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold" fontFamily="sans-serif">Pay</text><text x="24" y="27" textAnchor="middle" fill="#009CDE" fontSize="6" fontWeight="bold" fontFamily="sans-serif">Pal</text></svg>
             </div>
           </div>
         </div>
