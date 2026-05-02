@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sampleProducts } from "@/lib/sample-data";
+import { prisma } from "@/lib/db";
 
 // In-memory cart store (simple implementation)
 let cartItems: Array<{
@@ -10,10 +10,27 @@ let cartItems: Array<{
   color?: string;
 }> = [];
 
+function safeJsonParse(str: string, fallback: any) {
+  try { return JSON.parse(str); } catch { return fallback; }
+}
+
 export async function GET() {
+  const productIds = cartItems.map((item) => item.productId);
+  const products = productIds.length > 0
+    ? await prisma.product.findMany({ where: { id: { in: productIds } } })
+    : [];
+
+  const productMap = new Map(products.map((p) => [p.id, {
+    ...p,
+    images: safeJsonParse(p.images, []),
+    sizes: safeJsonParse(p.sizes, []),
+    colors: safeJsonParse(p.colors, []),
+    tags: safeJsonParse(p.tags ?? '[]', []),
+  }]));
+
   const itemsWithProducts = cartItems.map((item) => ({
     ...item,
-    product: sampleProducts.find((p) => p.id === item.productId),
+    product: productMap.get(item.productId) || null,
   }));
 
   return NextResponse.json({ items: itemsWithProducts });
@@ -23,7 +40,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const { productId, quantity = 1, size, color } = body;
 
-  const product = sampleProducts.find((p) => p.id === productId);
+  const product = await prisma.product.findUnique({ where: { id: productId } });
   if (!product) {
     return NextResponse.json({ error: "Product not found" }, { status: 404 });
   }

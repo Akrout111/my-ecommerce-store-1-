@@ -24,11 +24,13 @@ export function AddToCartButton({ product, size, color, className = "", variant 
       id: `${product.id}-${Date.now()}`,
       productId: product.id,
       product,
+      name: product.name,
+      image: product.images?.[0] || "",
       quantity: 1,
       size: size || product.sizes[0],
       color: color || product.colors[0],
-      price: product.price,
-      totalPrice: product.price,
+      price: product.salePrice ?? product.price,
+      totalPrice: product.salePrice ?? product.price,
     });
     openCart();
   };

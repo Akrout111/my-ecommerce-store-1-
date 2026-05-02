@@ -1,178 +1,158 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { motion } from "framer-motion";
+import { Truck, RotateCcw, Users, ChevronDown } from "lucide-react";
+import { Playfair_Display } from "next/font/google";
+import dynamic from "next/dynamic";
 import { useLanguage } from "@/components/ecommerce/language-provider";
-import { COLORS } from "@/lib/constants";
 
-const slides = [
-  {
-    bgGradient: "from-[#FAF8F5] via-[#F5EFE6] to-[#E8DCC8]",
-    darkGradient: "from-[#0F0F0F] via-[#1A1510] to-[#2A2015]",
-    titleKey: "hero.title",
-    subtitleKey: "hero.subtitle",
-    ctaKey: "hero.cta",
-    secondaryCtaKey: "hero.secondaryCta",
-    accent: COLORS.gold,
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-playfair",
+});
+
+const HeroCanvas = dynamic(() => import("./HeroCanvas").then((m) => ({ default: m.HeroCanvas })), { ssr: false });
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15,
+      delayChildren: 0.3,
+    },
   },
-  {
-    bgGradient: "from-[#1A1510] via-[#0F0F0F] to-[#1A1A1A]",
-    darkGradient: "from-[#1A1510] via-[#0F0F0F] to-[#1A1A1A]",
-    titleKey: "nav.men",
-    subtitleKey: "hero.subtitle",
-    ctaKey: "hero.cta",
-    secondaryCtaKey: "hero.secondaryCta",
-    accent: COLORS.gold,
-    customTitle: "Men's Collection",
-    customTitleAr: "مجموعة الرجال",
-  },
-  {
-    bgGradient: "from-[#2A1525] via-[#1A0F1A] to-[#0F0F0F]",
-    darkGradient: "from-[#2A1525] via-[#1A0F1A] to-[#0F0F0F]",
-    titleKey: "nav.sale",
-    subtitleKey: "hero.subtitle",
-    ctaKey: "hero.cta",
-    secondaryCtaKey: "hero.secondaryCta",
-    accent: COLORS.rose,
-    customTitle: "Sale — Up to 50% Off",
-    customTitleAr: "تخفيضات — حتى 50%",
-  },
-];
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
+};
 
 export function HeroSection() {
-  const { t, isRTL, language } = useLanguage();
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [scrollY, setScrollY] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const nextSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev + 1) % slides.length);
-  }, []);
-
-  const prevSlide = useCallback(() => {
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
-  }, []);
-
-  // Auto-advance
-  useEffect(() => {
-    const interval = setInterval(nextSlide, 6000);
-    return () => clearInterval(interval);
-  }, [nextSlide]);
-
-  const slide = slides[currentSlide];
+  const { isRTL } = useLanguage();
 
   return (
-    <section className="relative overflow-hidden" aria-label="Hero banner">
-      <AnimatePresence mode="wait">
+    <section
+      className={`relative min-h-screen w-full overflow-hidden bg-[#0F0F0F] ${playfair.variable}`}
+    >
+      {/* Background gradients */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(201,169,110,0.08)_0%,transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(232,160,191,0.05)_0%,transparent_60%)]" />
+
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-[1440px] flex-col lg:flex-row">
+        {/* Left Column — Content */}
         <motion.div
-          key={currentSlide}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.6 }}
-          className={`relative min-h-[70vh] sm:min-h-[80vh] flex items-center justify-center bg-gradient-to-br ${slide.bgGradient} dark:${slide.darkGradient}`}
+          className="flex flex-1 flex-col justify-center px-6 py-20 sm:px-12 lg:w-[55%] lg:px-16 xl:px-24"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
         >
-          {/* Parallax decorative elements */}
-          <motion.div
-            style={{ y: scrollY * 0.3 }}
-            className="absolute inset-0 overflow-hidden pointer-events-none"
-          >
-            <div
-              className="absolute top-20 end-20 w-72 h-72 rounded-full opacity-10 blur-3xl"
-              style={{ backgroundColor: slide.accent }}
-            />
-            <div
-              className="absolute bottom-20 start-20 w-96 h-96 rounded-full opacity-5 blur-3xl"
-              style={{ backgroundColor: slide.accent }}
-            />
+          {/* Badge */}
+          <motion.div variants={itemVariants}>
+            <span className="inline-flex items-center rounded-full border border-[#C9A96E]/30 bg-[#C9A96E]/10 px-4 py-1.5 text-xs font-medium uppercase tracking-widest text-[#C9A96E]">
+              ✦ New Collection — Spring 2026
+            </span>
           </motion.div>
 
-          {/* Content */}
-          <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-              className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-6"
-              style={{ color: slide.accent }}
+          {/* H1 */}
+          <motion.h1
+            className="mt-8 text-5xl font-bold leading-none tracking-tight text-white sm:text-6xl lg:text-7xl xl:text-8xl"
+            style={{ fontFamily: "var(--font-playfair), serif" }}
+          >
+            <motion.span
+              className="block"
+              initial={{ x: isRTL ? 80 : -80, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
             >
-              {slide.customTitle
-                ? language === "ar"
-                  ? slide.customTitleAr
-                  : slide.customTitle
-                : t(slide.titleKey)}
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.6 }}
-              className="text-lg sm:text-xl text-foreground/70 mb-8 max-w-2xl mx-auto"
+              Fashion
+            </motion.span>
+            <motion.span
+              className="block text-[#C9A96E]"
+              initial={{ x: isRTL ? -80 : 80, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
             >
-              {t(slide.subtitleKey)}
-            </motion.p>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6, duration: 0.6 }}
-              className="flex flex-wrap items-center justify-center gap-4"
+              Reimagined
+            </motion.span>
+          </motion.h1>
+
+          {/* Subtitle */}
+          <motion.p
+            variants={itemVariants}
+            className="mt-6 max-w-md text-lg text-white/60"
+          >
+            Your Style. Your Story. Your Persona. Discover curated collections for
+            every moment.
+          </motion.p>
+
+          {/* CTA Buttons */}
+          <motion.div
+            variants={itemVariants}
+            className="mt-8 flex flex-wrap gap-4"
+          >
+            <motion.a
+              href="/products"
+              className="inline-flex items-center rounded-full bg-[#C9A96E] px-8 py-3.5 text-sm font-semibold text-[#0F0F0F]"
+              whileHover={{
+                scale: 1.05,
+                boxShadow: "0 0 40px rgba(201,169,110,0.4)",
+              }}
+              whileTap={{ scale: 0.97 }}
             >
-              <a
-                href="#featured"
-                className="inline-flex h-12 items-center justify-center rounded-full px-8 text-sm font-semibold text-[#0F0F0F] transition-transform hover:scale-105"
-                style={{ backgroundColor: slide.accent }}
-              >
-                {t(slide.ctaKey)}
-              </a>
-              <a
-                href="#categories"
-                className="inline-flex h-12 items-center justify-center rounded-full border-2 border-current px-8 text-sm font-semibold transition-transform hover:scale-105"
-                style={{ color: slide.accent, borderColor: slide.accent }}
-              >
-                {t(slide.secondaryCtaKey)}
-              </a>
-            </motion.div>
-          </div>
+              Shop Now
+            </motion.a>
+            <motion.a
+              href="/lookbook"
+              className="inline-flex items-center rounded-full border-2 border-[#C9A96E] px-8 py-3.5 text-sm font-semibold text-[#C9A96E]"
+              whileHover={{
+                backgroundColor: "#C9A96E",
+                color: "#0F0F0F",
+              }}
+            >
+              View Lookbook
+            </motion.a>
+          </motion.div>
+
+          {/* Trust Badges */}
+          <motion.div
+            variants={itemVariants}
+            className="mt-10 flex flex-wrap gap-6 text-xs text-white/50"
+          >
+            <span className="flex items-center gap-1.5">
+              <Truck className="h-3.5 w-3.5" />
+              Free Shipping
+            </span>
+            <span className="flex items-center gap-1.5">
+              <RotateCcw className="h-3.5 w-3.5" />
+              Easy Returns
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Users className="h-3.5 w-3.5" />
+              50k+ Customers
+            </span>
+          </motion.div>
         </motion.div>
-      </AnimatePresence>
 
-      {/* Navigation arrows */}
-      <button
-        onClick={prevSlide}
-        className="absolute start-4 top-1/2 -translate-y-1/2 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40 transition-colors"
-        aria-label="Previous slide"
-      >
-        <ChevronLeft className="h-6 w-6" />
-      </button>
-      <button
-        onClick={nextSlide}
-        className="absolute end-4 top-1/2 -translate-y-1/2 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40 transition-colors"
-        aria-label="Next slide"
-      >
-        <ChevronRight className="h-6 w-6" />
-      </button>
-
-      {/* Dots */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
-        {slides.map((_, idx) => (
-          <button
-            key={idx}
-            onClick={() => setCurrentSlide(idx)}
-            className={`h-2 rounded-full transition-all duration-300 ${
-              idx === currentSlide ? "w-8" : "w-2"
-            }`}
-            style={{
-              backgroundColor: idx === currentSlide ? slide.accent : "rgba(255,255,255,0.4)",
-            }}
-            aria-label={`Go to slide ${idx + 1}`}
-          />
-        ))}
+        {/* Right Column — 3D Canvas */}
+        <div className="relative hidden h-[500px] min-h-[500px] lg:block lg:h-auto lg:w-[45%]">
+          <HeroCanvas />
+          <div className="pointer-events-none absolute inset-0" />
+        </div>
       </div>
+
+      {/* Scroll Indicator */}
+      <motion.div
+        className="absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-1"
+        animate={{ y: [0, 8, 0] }}
+        transition={{ repeat: Infinity, duration: 1.5 }}
+      >
+        <span className="text-xs uppercase tracking-widest text-white/30">
+          Scroll
+        </span>
+        <ChevronDown className="h-6 w-6 text-[#C9A96E]/60" />
+      </motion.div>
     </section>
   );
 }

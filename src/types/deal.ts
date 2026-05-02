@@ -5,12 +5,12 @@ export interface Deal {
   productId: string;
   product?: Product;
   title: string;
-  titleAr?: string;
+  titleAr?: string | null;
   discountPercent: number;
-  startsAt: string;
-  endsAt: string;
+  startsAt: string | Date;
+  endsAt: string | Date;
   isActive: boolean;
-  maxQuantity?: number;
+  maxQuantity?: number | null;
   soldCount: number;
-  createdAt: string;
+  createdAt: string | Date;
 }

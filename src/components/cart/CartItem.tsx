@@ -1,6 +1,7 @@
 "use client";
 
 import { Minus, Plus, Trash2 } from "lucide-react";
+import Image from "next/image";
 import { useCartStore } from "@/store/cart-store";
 import { useLanguage } from "@/components/ecommerce/language-provider";
 import { COLORS } from "@/lib/constants";
@@ -19,17 +20,14 @@ export function CartItem({ item }: CartItemProps) {
 
   return (
     <div className="flex gap-3 rounded-xl border border-border p-3">
-      {/* Image placeholder */}
-      <div className="w-20 h-24 rounded-lg bg-muted flex items-center justify-center text-2xl shrink-0">
-        {item.product.category === "women" || item.product.category === "beauty"
-          ? "👗"
-          : item.product.category === "men"
-          ? "🧥"
-          : item.product.category === "shoes"
-          ? "👠"
-          : item.product.category === "kids"
-          ? "🧒"
-          : "💍"}
+      {/* Product image */}
+      <div className="relative w-16 h-20 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+        <Image
+          src={item.image || item.product.images?.[0] || "/images/placeholder-product.svg"}
+          alt={item.name}
+          fill
+          className="object-cover"
+        />
       </div>
 
       {/* Info */}

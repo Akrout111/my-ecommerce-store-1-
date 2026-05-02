@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { Diamond, Heart, ShoppingBag, Search, Menu, Sun, Moon } from "lucide-react";
+import { Diamond, Heart, ShoppingBag, Search, Menu, Sun, Moon, User } from "lucide-react";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/components/ecommerce/language-provider";
@@ -11,6 +11,8 @@ import { useWishlistStore } from "@/store/wishlist-store";
 import { NAV_CATEGORIES, COLORS } from "@/lib/constants";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { MobileMenu } from "@/components/layout/MobileMenu";
+import { useRouter } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
 
 const emptySubscribe = () => () => {};
 
@@ -24,6 +26,8 @@ export function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+  const router = useRouter();
+  const { data: session } = useSession();
 
   const mounted = useSyncExternalStore(
     emptySubscribe,
@@ -41,8 +45,11 @@ export function Header() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
+    const q = searchQuery.trim();
+    if (q) {
+      router.push(`/search?q=${encodeURIComponent(q)}`);
       setSearchOpen(false);
+      setSearchQuery('');
     }
   };
 
@@ -96,7 +103,7 @@ export function Header() {
                   <Link
                     href={`/#${cat.key}`}
                     className={`px-3 py-2 text-sm font-medium rounded-md transition-colors hover:bg-accent hover:text-accent-foreground ${
-                      cat.key === "sale" ? "text-[#E8A0BF] hover:text-[#E8A0BF]" : ""
+                      (cat.key as string) === "sale" ? "text-[#E8A0BF] hover:text-[#E8A0BF]" : ""
                     }`}
                   >
                     {t(`nav.${cat.key}`)}
@@ -166,7 +173,7 @@ export function Header() {
 
               {/* Wishlist */}
               <Link
-                href="/"
+                href="/wishlist"
                 className="relative flex h-10 w-10 items-center justify-center rounded-full hover:bg-accent transition-colors"
                 aria-label="Wishlist"
               >
@@ -180,6 +187,32 @@ export function Header() {
                   </span>
                 )}
               </Link>
+
+              {/* User / Auth */}
+              {session?.user ? (
+                <div className="relative group">
+                  <button className="flex h-10 w-10 items-center justify-center rounded-full bg-[#C9A96E]/10 text-[#C9A96E] font-semibold text-sm hover:bg-[#C9A96E]/20 transition-colors">
+                    {(session.user.name || 'U')[0].toUpperCase()}
+                  </button>
+                  <div className="absolute end-0 top-full z-50 mt-2 w-48 rounded-xl border border-border bg-popover p-2 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                    <div className="px-3 py-2 border-b border-border mb-1">
+                      <p className="text-sm font-medium truncate">{session.user.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{session.user.email}</p>
+                    </div>
+                    <Link href="/account" className="block rounded-lg px-3 py-2 text-sm hover:bg-accent transition-colors">My Account</Link>
+                    <Link href="/account?tab=orders" className="block rounded-lg px-3 py-2 text-sm hover:bg-accent transition-colors">Orders</Link>
+                    <button onClick={() => signOut()} className="w-full text-start rounded-lg px-3 py-2 text-sm hover:bg-accent transition-colors text-destructive">Sign Out</button>
+                  </div>
+                </div>
+              ) : (
+                <Link
+                  href="/auth/login"
+                  className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-accent transition-colors"
+                  aria-label="Sign in"
+                >
+                  <User className="h-5 w-5" />
+                </Link>
+              )}
 
               {/* Cart */}
               <button

@@ -1,12 +1,12 @@
 "use client";
 
 import { useLanguage } from "@/components/ecommerce/language-provider";
-import { brandNames } from "@/lib/sample-data";
 import { COLORS } from "@/lib/constants";
 
 export function BrandMarquee() {
   const { t } = useLanguage();
 
+  const brandNames = ["Versace", "Gucci", "Armani", "Nike", "Prada", "Burberry", "Zara", "H&M", "L'Oreal", "Adidas", "Dolce & Gabbana", "Chanel"];
   // Double the brands for seamless loop
   const brands = [...brandNames, ...brandNames];
 

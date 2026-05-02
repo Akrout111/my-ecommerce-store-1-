@@ -1,14 +1,30 @@
-import { NextResponse } from "next/server";
-import { sampleDeals } from "@/lib/sample-data";
-import { sampleProducts } from "@/lib/sample-data";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
 
 export async function GET() {
-  const dealsWithProducts = sampleDeals.map((deal) => ({
-    ...deal,
-    product: sampleProducts.find((p) => p.id === deal.productId),
-  }));
+  try {
+    const now = new Date();
+    const deals = await prisma.deal.findMany({
+      where: { isActive: true, startsAt: { lte: now }, endsAt: { gte: now } },
+      include: { product: true },
+      orderBy: { endsAt: 'asc' },
+    });
+    const parsed = deals.map((d) => ({
+      ...d,
+      product: {
+        ...d.product,
+        images: safeJsonParse(d.product.images, []),
+        sizes: safeJsonParse(d.product.sizes, []),
+        colors: safeJsonParse(d.product.colors, []),
+        tags: safeJsonParse(d.product.tags ?? '[]', []),
+      },
+    }));
+    return NextResponse.json({ deals: parsed });
+  } catch (error) {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
 
-  return NextResponse.json({
-    deals: dealsWithProducts.filter((d) => d.isActive),
-  });
+function safeJsonParse(str: string, fallback: any) {
+  try { return JSON.parse(str); } catch { return fallback; }
 }

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLanguage } from "@/components/ecommerce/language-provider";
 
 interface CountdownTimerProps {
-  endDate: string;
+  endDate: string | Date;
 }
 
 interface TimeLeft {
@@ -14,9 +14,12 @@ interface TimeLeft {
   seconds: number;
 }
 
-function calculateTimeLeft(endDate: string): TimeLeft {
+// Cached server snapshot to avoid creating a new object on every call
+const SERVER_SNAPSHOT: TimeLeft = { days: 0, hours: 0, minutes: 0, seconds: 0 };
+
+function calculateTimeLeft(endDate: string | Date): TimeLeft {
   const diff = new Date(endDate).getTime() - Date.now();
-  if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+  if (diff <= 0) return SERVER_SNAPSHOT;
 
   return {
     days: Math.floor(diff / (1000 * 60 * 60 * 24)),
@@ -26,13 +29,18 @@ function calculateTimeLeft(endDate: string): TimeLeft {
   };
 }
 
+function isExpired(t: TimeLeft): boolean {
+  return t.days === 0 && t.hours === 0 && t.minutes === 0 && t.seconds === 0;
+}
+
 export function CountdownTimer({ endDate }: CountdownTimerProps) {
   const { t } = useLanguage();
   const [timeLeft, setTimeLeft] = useState<TimeLeft>(() => calculateTimeLeft(endDate));
+  const expiredRef = useRef(isExpired(timeLeft));
 
   useEffect(() => {
     // If countdown is already over, no need to set interval
-    if (timeLeft.days === 0 && timeLeft.hours === 0 && timeLeft.minutes === 0 && timeLeft.seconds === 0) {
+    if (expiredRef.current) {
       return;
     }
 
@@ -41,13 +49,14 @@ export function CountdownTimer({ endDate }: CountdownTimerProps) {
       setTimeLeft(newTimeLeft);
 
       // Stop the interval when countdown reaches zero
-      if (newTimeLeft.days === 0 && newTimeLeft.hours === 0 && newTimeLeft.minutes === 0 && newTimeLeft.seconds === 0) {
+      if (isExpired(newTimeLeft)) {
+        expiredRef.current = true;
         clearInterval(id);
       }
     }, 1000);
 
     return () => clearInterval(id);
-  }, [endDate, timeLeft.days, timeLeft.hours, timeLeft.minutes, timeLeft.seconds]);
+  }, [endDate]);
 
   const totalHoursLeft = timeLeft.days * 24 + timeLeft.hours;
 

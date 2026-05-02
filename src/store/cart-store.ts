@@ -29,14 +29,21 @@ interface CartState {
   removeCoupon: () => void;
 }
 
-function calculateTotals(items: CartItem[]) {
+const VALID_COUPONS: Record<string, number> = {
+  PERSONA10: 0.10,
+  SAVE15: 0.15,
+  WELCOME20: 0.20,
+  FIRSTORDER: 0.20,
+};
+
+function calculateTotals(items: CartItem[], couponCode?: string | null) {
   const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
   const shipping = subtotal > 50 ? 0 : 5.99;
   const tax = subtotal * 0.08;
-  const discount = 0;
+  const discountRate = couponCode ? (VALID_COUPONS[couponCode.toUpperCase()] ?? 0) : 0;
+  const discount = subtotal * discountRate;
   const total = subtotal + shipping + tax - discount;
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
-
   return { subtotal, shipping, tax, discount, total, itemCount };
 }
 
@@ -70,13 +77,13 @@ export const useCartStore = create<CartState>()(
           newItems = [...items, item];
         }
 
-        const totals = calculateTotals(newItems);
+        const totals = calculateTotals(newItems, get().couponCode);
         set({ items: newItems, ...totals });
       },
 
       removeItem: (itemId: string) => {
         const newItems = get().items.filter((i) => i.id !== itemId);
-        const totals = calculateTotals(newItems);
+        const totals = calculateTotals(newItems, get().couponCode);
         set({ items: newItems, ...totals });
       },
 
@@ -88,7 +95,7 @@ export const useCartStore = create<CartState>()(
         const newItems = get().items.map((i) =>
           i.id === itemId ? { ...i, quantity, totalPrice: quantity * i.price } : i
         );
-        const totals = calculateTotals(newItems);
+        const totals = calculateTotals(newItems, get().couponCode);
         set({ items: newItems, ...totals });
       },
 
@@ -109,8 +116,16 @@ export const useCartStore = create<CartState>()(
       openCart: () => set({ isOpen: true }),
       closeCart: () => set({ isOpen: false }),
 
-      applyCoupon: (code: string) => set({ couponCode: code }),
-      removeCoupon: () => set({ couponCode: null }),
+      applyCoupon: (code: string) => {
+        const { items } = get();
+        const totals = calculateTotals(items, code);
+        set({ couponCode: code, ...totals });
+      },
+      removeCoupon: () => {
+        const { items } = get();
+        const totals = calculateTotals(items, null);
+        set({ couponCode: null, ...totals });
+      },
     }),
     {
       name: "persona-cart",

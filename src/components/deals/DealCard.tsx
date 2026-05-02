@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { Flame } from "lucide-react";
 import { CountdownTimer } from "@/components/deals/CountdownTimer";
 import type { Deal } from "@/types/deal";
-import { sampleProducts } from "@/lib/sample-data";
 import { COLORS } from "@/lib/constants";
 import { useLanguage } from "@/components/ecommerce/language-provider";
 
@@ -14,8 +13,8 @@ interface DealCardProps {
 
 export function DealCard({ deal }: DealCardProps) {
   const { t, formatCurrency } = useLanguage();
-  const product = sampleProducts.find((p) => p.id === deal.productId);
-  if (!product) return null;
+  // Product info is now included in the deal object from the API
+  if (!deal.product) return null;
 
   const soldPercent = deal.maxQuantity
     ? Math.round((deal.soldCount / deal.maxQuantity) * 100)

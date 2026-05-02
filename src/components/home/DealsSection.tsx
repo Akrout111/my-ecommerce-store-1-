@@ -7,7 +7,6 @@ import { useLanguage } from "@/components/ecommerce/language-provider";
 import { CountdownTimer } from "@/components/deals/CountdownTimer";
 import { ProductCard } from "@/components/products/ProductCard";
 import type { Deal } from "@/types/deal";
-import { sampleProducts } from "@/lib/sample-data";
 import { COLORS } from "@/lib/constants";
 
 interface DealsSectionProps {
@@ -43,8 +42,8 @@ export function DealsSection({ deals }: DealsSectionProps) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {activeDeals.map((deal, index) => {
-            const product = sampleProducts.find((p) => p.id === deal.productId);
-            if (!product) return null;
+            if (!deal.product) return null;
+            const product = deal.product;
 
             const soldPercent = deal.maxQuantity
               ? Math.round((deal.soldCount / deal.maxQuantity) * 100)
