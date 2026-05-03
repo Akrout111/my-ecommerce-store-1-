@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,12 +16,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { passwordSchema } from "@/lib/validations/auth";
+import { PasswordStrengthIndicator } from "@/components/auth/PasswordStrengthIndicator";
 
 const registerSchema = z
   .object({
     name: z.string().min(2, "Name must be at least 2 characters"),
     email: z.string().email("Please enter a valid email"),
-    password: z.string().min(8, "Password must be at least 8 characters"),
+    password: passwordSchema,
     confirmPassword: z.string().min(1, "Please confirm your password"),
     agreeToTerms: z.boolean().refine((v) => v === true, {
       message: "You must agree to the terms",
@@ -33,49 +35,6 @@ const registerSchema = z
   });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
-
-function PasswordStrength({ password }: { password: string }) {
-  const strength = useMemo(() => {
-    if (password.length < 8) return { level: 0, label: "Too short" };
-    let score = 0;
-    if (password.length >= 8) score++;
-    if (/[A-Z]/.test(password)) score++;
-    if (/[0-9]/.test(password)) score++;
-    if (/[^A-Za-z0-9]/.test(password)) score++;
-
-    const labels = ["Too short", "Weak", "Good", "Strong", "Very Strong"];
-    const colors = [
-      "bg-red-500",
-      "bg-orange-500",
-      "bg-yellow-500",
-      "bg-green-500",
-      "bg-green-600",
-    ];
-    return {
-      level: score,
-      label: labels[score],
-      color: colors[score],
-    };
-  }, [password]);
-
-  return (
-    <div className="mt-2 space-y-1.5">
-      <div className="flex gap-1">
-        {[1, 2, 3, 4].map((i) => (
-          <div
-            key={i}
-            className={`h-1 flex-1 rounded-full transition ${
-              i <= strength.level ? strength.color : "bg-muted"
-            }`}
-          />
-        ))}
-      </div>
-      <p className="text-xs text-muted-foreground">
-        Strength: <span className="font-medium">{strength.label}</span>
-      </p>
-    </div>
-  );
-}
 
 export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -217,7 +176,7 @@ export function RegisterForm() {
                 {errors.password.message}
               </p>
             )}
-            <PasswordStrength password={password} />
+            <PasswordStrengthIndicator password={password} />
           </div>
 
           <div>

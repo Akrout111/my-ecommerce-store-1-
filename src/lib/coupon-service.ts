@@ -1,93 +1,64 @@
 /**
  * Server-side coupon validation service.
- * Coupon codes are kept on the server to prevent client-side tampering.
- * To add a new coupon, simply add an entry to the COUPONS array below.
+ * Coupon codes are stored in the database for dynamic management.
  */
 
-export interface Coupon {
-  code: string;
-  discountType: 'percentage' | 'fixed';
-  discountValue: number;
-  minPurchase: number;
-  active: boolean;
-}
+import { prisma } from '@/lib/db';
 
-const COUPONS: Coupon[] = [
-  { code: 'PERSONA10', discountType: 'percentage', discountValue: 10, minPurchase: 0, active: true },
-  { code: 'SAVE15', discountType: 'percentage', discountValue: 15, minPurchase: 0, active: true },
-  { code: 'WELCOME20', discountType: 'percentage', discountValue: 20, minPurchase: 0, active: true },
-  { code: 'FIRSTORDER', discountType: 'percentage', discountValue: 20, minPurchase: 0, active: true },
-];
-
-export interface CouponValidationResult {
+export interface CouponResult {
   valid: boolean;
   discount: number;
   message: string;
-  coupon?: Coupon;
+  coupon?: { code: string; discountPercent: number };
 }
 
-/**
- * Validates a coupon code against the server-side coupon list.
- *
- * @param code     - The coupon code entered by the user (case-insensitive)
- * @param cartTotal - The current cart subtotal before discount
- * @returns Validation result with discount amount and human-readable message
- */
-export function validateCoupon(
+export async function validateCoupon(
   code: string,
   cartTotal: number
-): CouponValidationResult {
-  const normalizedCode = code.toUpperCase().trim();
-
-  const coupon = COUPONS.find((c) => c.code === normalizedCode);
+): Promise<CouponResult> {
+  const coupon = await prisma.coupon.findUnique({
+    where: { code: code.toUpperCase() },
+  });
 
   if (!coupon) {
+    return { valid: false, discount: 0, message: 'Invalid coupon code' };
+  }
+
+  if (!coupon.isActive) {
+    return { valid: false, discount: 0, message: 'This coupon is no longer active' };
+  }
+
+  if (coupon.expiresAt && coupon.expiresAt < new Date()) {
+    return { valid: false, discount: 0, message: 'This coupon has expired' };
+  }
+
+  if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses) {
+    return { valid: false, discount: 0, message: 'This coupon has reached its usage limit' };
+  }
+
+  if (coupon.minOrderAmount && cartTotal < coupon.minOrderAmount) {
     return {
       valid: false,
       discount: 0,
-      message: 'Invalid coupon code',
+      message: `Minimum order amount is $${coupon.minOrderAmount}`,
     };
   }
 
-  if (!coupon.active) {
-    return {
-      valid: false,
-      discount: 0,
-      message: 'This coupon is no longer active',
-    };
-  }
-
-  if (cartTotal < coupon.minPurchase) {
-    return {
-      valid: false,
-      discount: 0,
-      message: `Minimum purchase of $${coupon.minPurchase.toFixed(2)} required`,
-    };
-  }
-
-  let discount: number;
-  let description: string;
-
-  if (coupon.discountType === 'percentage') {
-    discount = cartTotal * (coupon.discountValue / 100);
-    description = `${coupon.discountValue}% off`;
-  } else {
-    discount = Math.min(coupon.discountValue, cartTotal);
-    description = `$${coupon.discountValue.toFixed(2)} off`;
-  }
-
+  const discount = cartTotal * (coupon.discountPercent / 100);
   return {
     valid: true,
     discount,
-    message: `Coupon ${coupon.code} applied — ${description}`,
-    coupon,
+    message: `${coupon.discountPercent}% discount applied`,
+    coupon: { code: coupon.code, discountPercent: coupon.discountPercent },
   };
 }
 
 /**
- * Returns the list of active coupon codes (without exposing discount details).
- * Useful for hinting available coupons in the UI.
+ * Increment the used count for a coupon after a successful order.
  */
-export function getActiveCouponCodes(): string[] {
-  return COUPONS.filter((c) => c.active).map((c) => c.code);
+export async function incrementCouponUsage(code: string): Promise<void> {
+  await prisma.coupon.update({
+    where: { code: code.toUpperCase() },
+    data: { usedCount: { increment: 1 } },
+  });
 }

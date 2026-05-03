@@ -1,20 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Check, ChevronRight, ChevronLeft, Lock, Truck, Package,
-  Loader2, Zap, CircleArrowUp, CreditCard,
+  Loader2, Zap, CircleArrowUp, AlertCircle,
 } from "lucide-react";
 import * as RadioGroup from "@radix-ui/react-radio-group";
 import Image from "next/image";
 import { useCartStore } from "@/store/cart-store";
+import { getShippingCost } from "@/lib/shipping";
+import { TAX_RATE, FREE_SHIPPING_THRESHOLD } from "@/lib/constants";
+import type { ShippingMethod } from "@/lib/shipping";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  Elements,
+  PaymentElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
 
 interface CheckoutFlowProps {
-  onOrderComplete: (orderId: string) => void;
+  onOrderComplete: (orderId: string, orderNumber: string) => void;
 }
 
 const steps = [
@@ -72,22 +82,56 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
 }
 
 function OrderSummary({
-  shippingOption, couponCode, setCouponCode, couponApplied, setCouponApplied, couponError, setCouponError,
+  shippingOption,
+  couponCode,
+  setCouponCode,
+  couponApplied,
+  setCouponApplied,
+  couponError,
+  setCouponError,
+  couponDiscount,
+  setCouponDiscount,
 }: {
   shippingOption: string;
   couponCode: string; setCouponCode: (v: string) => void;
   couponApplied: boolean; setCouponApplied: (v: boolean) => void;
   couponError: string; setCouponError: (v: string) => void;
+  couponDiscount: number; setCouponDiscount: (v: number) => void;
 }) {
   const { items, subtotal } = useCartStore();
-  const shipping = shippingOption === "standard" ? (subtotal >= 50 ? 0 : 5.99) : shippingOption === "express" ? 12.99 : 24.99;
-  const tax = subtotal * 0.08;
-  const discount = couponApplied ? subtotal * 0.1 : 0;
+  const shipping = getShippingCost(subtotal, shippingOption as ShippingMethod);
+  const tax = subtotal * TAX_RATE;
+  const discount = couponDiscount;
   const total = subtotal + shipping + tax - discount;
 
-  const handleApply = () => {
-    if (couponCode.toLowerCase() === "persona10") { setCouponApplied(true); setCouponError(""); }
-    else { setCouponError("Invalid coupon code"); setCouponApplied(false); }
+  const handleApply = async () => {
+    if (!couponCode.trim()) {
+      setCouponError("Please enter a coupon code");
+      setCouponApplied(false);
+      setCouponDiscount(0);
+      return;
+    }
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponCode, cartTotal: subtotal }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setCouponApplied(true);
+        setCouponError("");
+        setCouponDiscount(data.discount);
+      } else {
+        setCouponApplied(false);
+        setCouponError(data.message || "Invalid coupon code");
+        setCouponDiscount(0);
+      }
+    } catch {
+      setCouponError("Failed to validate coupon");
+      setCouponApplied(false);
+      setCouponDiscount(0);
+    }
   };
 
   return (
@@ -109,20 +153,23 @@ function OrderSummary({
       </div>
       <hr className="my-4 border-border" />
       <div className="mb-4 flex gap-2">
-        <input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="Coupon code" className="flex-1 rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A96E]" />
+        <input type="text" value={couponCode} onChange={(e) => { setCouponCode(e.target.value); if (couponApplied) { setCouponApplied(false); setCouponDiscount(0); } }} placeholder="Coupon code" className="flex-1 rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A96E]" />
         <button onClick={handleApply} className="rounded-xl bg-[#C9A96E] px-4 py-2 text-sm font-semibold text-[#0F0F0F]">Apply</button>
       </div>
-      {couponApplied && <p className="mb-2 text-xs text-green-500">✓ {couponCode} applied! 10% off</p>}
+      {couponApplied && <p className="mb-2 text-xs text-green-500">✓ {couponCode} applied!</p>}
       {couponError && <p className="mb-2 text-xs text-destructive">{couponError}</p>}
       <hr className="mb-4 border-border" />
       <div className="space-y-2 text-sm">
         <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
         <div className="flex justify-between"><span className="text-muted-foreground">Shipping</span><span>{shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}</span></div>
-        <div className="flex justify-between"><span className="text-muted-foreground">Tax (8%)</span><span>${tax.toFixed(2)}</span></div>
+        <div className="flex justify-between"><span className="text-muted-foreground">Tax ({(TAX_RATE * 100).toFixed(0)}%)</span><span>${tax.toFixed(2)}</span></div>
         {discount > 0 && <div className="flex justify-between text-green-500"><span>Discount</span><span>-${discount.toFixed(2)}</span></div>}
         <hr className="border-border" />
         <div className="flex justify-between text-lg font-bold"><span>Total</span><span className="text-[#C9A96E]">${total.toFixed(2)}</span></div>
       </div>
+      {subtotal < FREE_SHIPPING_THRESHOLD && (
+        <p className="mt-3 text-xs text-muted-foreground">Add ${(FREE_SHIPPING_THRESHOLD - subtotal).toFixed(2)} more for free standard shipping!</p>
+      )}
       <div className="mt-4 flex items-center justify-center gap-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1"><Lock size={12} /> SSL Secure</span>
         <span className="flex items-center gap-1"><Package size={12} /> Tracked Delivery</span>
@@ -131,37 +178,203 @@ function OrderSummary({
   );
 }
 
+// Stripe Payment Form component — rendered inside Elements provider
+function StripePaymentForm({
+  total,
+  onSuccess,
+  onError,
+}: {
+  total: number;
+  onSuccess: (orderId: string, orderNumber: string) => void;
+  onError: (message: string) => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!stripe || !elements) {
+      return;
+    }
+
+    setIsProcessing(true);
+    setPaymentError(null);
+
+    const { error, paymentIntent } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: `${window.location.origin}/order-confirmation`,
+      },
+      redirect: "if_required",
+    });
+
+    if (error) {
+      const msg = error.message || "Payment failed. Please try again.";
+      setPaymentError(msg);
+      onError(msg);
+      setIsProcessing(false);
+    } else if (paymentIntent) {
+      // Payment succeeded (no redirect needed or 3DS completed)
+      // Use orderId/orderNumber from server response (set in CheckoutFlow state)
+      onSuccess("", "");
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <PaymentElement
+        options={{
+          layout: "tabs",
+        }}
+      />
+      {paymentError && (
+        <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+          <AlertCircle size={16} className="mt-0.5 flex-shrink-0 text-destructive" />
+          <p className="text-sm text-destructive">{paymentError}</p>
+        </div>
+      )}
+      <motion.button
+        type="submit"
+        disabled={!stripe || isProcessing}
+        className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[#0F0F0F] font-semibold text-white transition disabled:opacity-70"
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.98 }}
+      >
+        {isProcessing ? (
+          <>
+            <Loader2 size={18} className="animate-spin" /> Processing Payment...
+          </>
+        ) : (
+          <>
+            <Lock size={18} /> Pay ${total.toFixed(2)}
+          </>
+        )}
+      </motion.button>
+    </form>
+  );
+}
+
+// Lazy-loaded Stripe promise
+let stripePromise: ReturnType<typeof loadStripe> | null = null;
+
+function getStripePromise() {
+  if (!stripePromise) {
+    const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    if (!key) {
+      console.error("Missing NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY");
+      return null;
+    }
+    stripePromise = loadStripe(key);
+  }
+  return stripePromise;
+}
+
 export function CheckoutFlow({ onOrderComplete }: CheckoutFlowProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [direction, setDirection] = useState(1);
-  const [shippingOption, setShippingOption] = useState("standard");
-  const [billingSameAsShipping, setBillingSameAsShipping] = useState(true);
+  const [shippingOption, setShippingOption] = useState<ShippingMethod>("standard");
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [couponApplied, setCouponApplied] = useState(false);
   const [couponError, setCouponError] = useState("");
-  const [cardNumber, setCardNumber] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvv, setCvv] = useState("");
-  const [cardName, setCardName] = useState("");
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<InfoFormData>({ resolver: zodResolver(infoSchema) });
-  const { subtotal } = useCartStore();
-  const shippingCost = shippingOption === "standard" ? (subtotal >= 50 ? 0 : 5.99) : shippingOption === "express" ? 12.99 : 24.99;
-  const total = subtotal + shippingCost + subtotal * 0.08 - (couponApplied ? subtotal * 0.1 : 0);
+  // Stripe state
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [orderNumber, setOrderNumber] = useState<string | null>(null);
+
+  const { register, handleSubmit, formState: { errors }, getValues } = useForm<InfoFormData>({ resolver: zodResolver(infoSchema) });
+  const { items, subtotal, clearCart } = useCartStore();
+
+  const shippingCost = getShippingCost(subtotal, shippingOption);
+  const total = subtotal + shippingCost + subtotal * TAX_RATE - couponDiscount;
 
   const goToStep = (step: number, dir: number) => { setDirection(dir); setCurrentStep(step); };
   const onInfoSubmit = () => goToStep(2, 1);
 
-  const handlePlaceOrder = async () => {
-    setIsPlacingOrder(true);
-    await new Promise((r) => setTimeout(r, 2000));
-    setIsPlacingOrder(false);
-    onOrderComplete("mock-order-" + Date.now());
-  };
+  const handleContinueToPayment = useCallback(async () => {
+    if (isPlacingOrder) return;
 
-  const fmtCard = (v: string) => v.replace(/\s+/g, "").replace(/[^0-9]/gi, "").match(/.{1,4}/g)?.join(" ").substring(0, 19) || "";
-  const fmtExp = (v: string) => { const d = v.replace(/\D/g, ""); return d.length >= 2 ? d.slice(0,2) + "/" + d.slice(2,4) : d; };
+    setIsPlacingOrder(true);
+    setPaymentError(null);
+
+    try {
+      const formValues = getValues();
+      const shippingAddress = {
+        firstName: formValues.firstName,
+        lastName: formValues.lastName,
+        address: formValues.address,
+        city: formValues.city,
+        state: formValues.state || "",
+        postalCode: formValues.postalCode,
+        country: formValues.country,
+        phone: formValues.phone || "",
+      };
+
+      const response = await fetch("/api/checkout/create-payment-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            size: item.size,
+            color: item.color,
+          })),
+          couponCode: couponApplied ? couponCode : undefined,
+          shippingMethod: shippingOption,
+          guestEmail: formValues.email,
+          shippingAddress,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setPaymentError(data.error || "Failed to create payment");
+        setIsPlacingOrder(false);
+        return;
+      }
+
+      setClientSecret(data.clientSecret);
+      setOrderId(data.orderId);
+      setOrderNumber(data.orderNumber);
+      goToStep(3, 1);
+    } catch {
+      setPaymentError("Network error. Please try again.");
+    } finally {
+      setIsPlacingOrder(false);
+    }
+  }, [isPlacingOrder, items, couponApplied, couponCode, shippingOption, getValues]);
+
+  const handlePaymentSuccess = useCallback(
+    (_paymentOrderId: string, _paymentOrderNumber: string) => {
+      clearCart();
+      // Use the orderId/orderNumber we got from the server
+      if (orderId && orderNumber) {
+        onOrderComplete(orderId, orderNumber);
+      }
+    },
+    [clearCart, orderId, orderNumber, onOrderComplete]
+  );
+
+  const handlePaymentError = useCallback((message: string) => {
+    setPaymentError(message);
+  }, []);
+
+  // Reset payment state when going back
+  useEffect(() => {
+    if (currentStep < 3) {
+      setClientSecret(null);
+      setPaymentError(null);
+    }
+  }, [currentStep]);
 
   const slide = {
     enter: (d: number) => ({ x: d > 0 ? 60 : -60, opacity: 0 }),
@@ -169,13 +382,15 @@ export function CheckoutFlow({ onOrderComplete }: CheckoutFlowProps) {
     exit: (d: number) => ({ x: d > 0 ? -60 : 60, opacity: 0 }),
   };
 
+  const stripeP = getStripePromise();
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <StepIndicator currentStep={currentStep} />
       <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
         <div className="relative min-h-[400px] overflow-hidden">
           <AnimatePresence mode="wait" custom={direction}>
-            {/* STEP 1 */}
+            {/* STEP 1 — Information */}
             {currentStep === 1 && (
               <motion.div key="s1" custom={direction} variants={slide} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
                 <form onSubmit={handleSubmit(onInfoSubmit)}>
@@ -240,15 +455,15 @@ export function CheckoutFlow({ onOrderComplete }: CheckoutFlowProps) {
               </motion.div>
             )}
 
-            {/* STEP 2 */}
+            {/* STEP 2 — Shipping */}
             {currentStep === 2 && (
               <motion.div key="s2" custom={direction} variants={slide} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
                 <h2 className="mb-6 text-xl font-bold">Shipping Method</h2>
-                <RadioGroup.Root value={shippingOption} onValueChange={setShippingOption} className="space-y-3">
+                <RadioGroup.Root value={shippingOption} onValueChange={(v) => setShippingOption(v as ShippingMethod)} className="space-y-3">
                   {[
-                    { value: "standard", icon: Truck, title: "Standard Shipping", desc: "5–7 Business Days", price: subtotal >= 50 ? "Free" : "$5.99" },
-                    { value: "express", icon: Zap, title: "Express Shipping", desc: "2–3 Business Days", price: "$12.99" },
-                    { value: "nextday", icon: CircleArrowUp, title: "Next Day Delivery", desc: "Next Business Day", price: "$24.99" },
+                    { value: "standard" as const, icon: Truck, title: "Standard Shipping", desc: "5–7 Business Days", price: getShippingCost(subtotal, "standard") === 0 ? "Free" : `$${getShippingCost(subtotal, "standard").toFixed(2)}` },
+                    { value: "express" as const, icon: Zap, title: "Express Shipping", desc: "2–3 Business Days", price: `$${getShippingCost(subtotal, "express").toFixed(2)}` },
+                    { value: "nextday" as const, icon: CircleArrowUp, title: "Next Day Delivery", desc: "Next Business Day", price: `$${getShippingCost(subtotal, "nextday").toFixed(2)}` },
                   ].map((opt) => (
                     <RadioGroup.Item key={opt.value} value={opt.value}
                       className={`flex w-full items-center gap-4 rounded-xl border p-4 text-left transition ${shippingOption === opt.value ? "border-[#C9A96E] bg-[#C9A96E]/5" : "border-border hover:border-[#C9A96E]/50"}`}>
@@ -265,53 +480,43 @@ export function CheckoutFlow({ onOrderComplete }: CheckoutFlowProps) {
                 </RadioGroup.Root>
                 <div className="mt-6 flex gap-3">
                   <motion.button onClick={() => goToStep(1, -1)} className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full border-2 border-border font-semibold transition hover:border-[#C9A96E]" whileTap={{ scale: 0.98 }}><ChevronLeft size={18} /> Back</motion.button>
-                  <motion.button onClick={() => goToStep(3, 1)} className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-[#C9A96E] font-semibold text-[#0F0F0F]" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>Continue to Payment <ChevronRight size={18} /></motion.button>
+                  <motion.button onClick={handleContinueToPayment} disabled={isPlacingOrder} className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-[#C9A96E] font-semibold text-[#0F0F0F] disabled:opacity-70" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    {isPlacingOrder ? <Loader2 size={18} className="animate-spin" /> : <>Continue to Payment <ChevronRight size={18} /></>}
+                  </motion.button>
                 </div>
               </motion.div>
             )}
 
-            {/* STEP 3 */}
+            {/* STEP 3 — Payment */}
             {currentStep === 3 && (
               <motion.div key="s3" custom={direction} variants={slide} initial="enter" animate="center" exit="exit" transition={{ duration: 0.3 }}>
                 <div className="mb-6 flex items-center gap-2"><Lock size={20} className="text-[#C9A96E]" /><h2 className="text-xl font-bold">Payment Information</h2></div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="mb-1 block text-sm font-medium">Card Number</label>
-                    <div className="relative">
-                      <CreditCard size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                      <input type="text" value={cardNumber} onChange={(e) => setCardNumber(fmtCard(e.target.value))} placeholder="4242 4242 4242 4242" maxLength={19} className="w-full rounded-xl border bg-background py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A96E]" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="mb-1 block text-sm font-medium">Expiry Date</label>
-                      <input type="text" value={expiry} onChange={(e) => setExpiry(fmtExp(e.target.value))} placeholder="MM/YY" maxLength={5} className="w-full rounded-xl border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A96E]" />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-sm font-medium">CVV</label>
-                      <input type="text" value={cvv} onChange={(e) => setCvv(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="123" maxLength={4} className="w-full rounded-xl border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A96E]" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-sm font-medium">Name on Card</label>
-                    <input type="text" value={cardName} onChange={(e) => setCardName(e.target.value)} placeholder="John Doe" className="w-full rounded-xl border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A96E]" />
-                  </div>
-                </div>
-                <p className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">🔒 Your payment is secure and encrypted</p>
 
-                <div className="mt-6">
-                  <h3 className="mb-3 text-sm font-medium">Billing Address</h3>
-                  <RadioGroup.Root value={billingSameAsShipping ? "same" : "different"} onValueChange={(v) => setBillingSameAsShipping(v === "same")} className="space-y-2">
-                    <RadioGroup.Item value="same" className="flex w-full items-center gap-3 rounded-xl border border-border p-3 text-left transition hover:border-[#C9A96E]/50">
-                      <div className={`h-4 w-4 rounded-full border-2 ${billingSameAsShipping ? "border-[#C9A96E] bg-[#C9A96E]" : "border-muted"}`}>{billingSameAsShipping && <div className="m-auto h-1.5 w-1.5 rounded-full bg-[#0F0F0F]" />}</div>
-                      <span className="text-sm">Same as shipping address</span>
-                    </RadioGroup.Item>
-                    <RadioGroup.Item value="different" className="flex w-full items-center gap-3 rounded-xl border border-border p-3 text-left transition hover:border-[#C9A96E]/50">
-                      <div className={`h-4 w-4 rounded-full border-2 ${!billingSameAsShipping ? "border-[#C9A96E] bg-[#C9A96E]" : "border-muted"}`}>{!billingSameAsShipping && <div className="m-auto h-1.5 w-1.5 rounded-full bg-[#0F0F0F]" />}</div>
-                      <span className="text-sm">Use different billing address</span>
-                    </RadioGroup.Item>
-                  </RadioGroup.Root>
-                </div>
+                {paymentError && (
+                  <div className="mb-4 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                    <AlertCircle size={16} className="mt-0.5 flex-shrink-0 text-destructive" />
+                    <p className="text-sm text-destructive">{paymentError}</p>
+                  </div>
+                )}
+
+                {clientSecret && stripeP ? (
+                  <Elements stripe={stripeP} options={{ clientSecret }}>
+                    <StripePaymentForm
+                      total={total}
+                      onSuccess={handlePaymentSuccess}
+                      onError={handlePaymentError}
+                    />
+                  </Elements>
+                ) : !clientSecret ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 size={24} className="animate-spin text-[#C9A96E]" />
+                    <span className="ml-3 text-muted-foreground">Preparing payment...</span>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                    <p className="text-sm text-destructive">Stripe is not configured. Please set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.</p>
+                  </div>
+                )}
 
                 <div className="mt-4 flex items-center gap-3 text-xs text-muted-foreground">
                   <span>We accept:</span>
@@ -319,11 +524,8 @@ export function CheckoutFlow({ onOrderComplete }: CheckoutFlowProps) {
                 </div>
                 <p className="mt-3 text-[11px] text-muted-foreground">By placing this order you agree to our Terms of Service and Privacy Policy.</p>
 
-                <div className="mt-6 flex gap-3">
-                  <motion.button onClick={() => goToStep(2, -1)} className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full border-2 border-border font-semibold transition hover:border-[#C9A96E]" whileTap={{ scale: 0.98 }}><ChevronLeft size={18} /> Back</motion.button>
-                  <motion.button onClick={handlePlaceOrder} disabled={isPlacingOrder} className="flex h-14 flex-[2] items-center justify-center gap-2 rounded-full bg-[#0F0F0F] font-semibold text-white transition disabled:opacity-70" whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
-                    {isPlacingOrder ? <><Loader2 size={18} className="animate-spin" /> Processing...</> : <><Lock size={18} /> Place Order · ${total.toFixed(2)}</>}
-                  </motion.button>
+                <div className="mt-4">
+                  <motion.button onClick={() => goToStep(2, -1)} className="flex h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-border font-semibold transition hover:border-[#C9A96E]" whileTap={{ scale: 0.98 }}><ChevronLeft size={18} /> Back to Shipping</motion.button>
                 </div>
               </motion.div>
             )}
@@ -331,7 +533,13 @@ export function CheckoutFlow({ onOrderComplete }: CheckoutFlowProps) {
         </div>
 
         <div className="lg:sticky lg:top-24 lg:self-start">
-          <OrderSummary shippingOption={shippingOption} couponCode={couponCode} setCouponCode={setCouponCode} couponApplied={couponApplied} setCouponApplied={setCouponApplied} couponError={couponError} setCouponError={setCouponError} />
+          <OrderSummary
+            shippingOption={shippingOption}
+            couponCode={couponCode} setCouponCode={setCouponCode}
+            couponApplied={couponApplied} setCouponApplied={setCouponApplied}
+            couponError={couponError} setCouponError={setCouponError}
+            couponDiscount={couponDiscount} setCouponDiscount={setCouponDiscount}
+          />
         </div>
       </div>
     </div>

@@ -15,6 +15,7 @@ import { useLanguage } from "@/components/ecommerce/language-provider";
 import { useCartStore } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
 import { ProductCard } from "@/components/products/ProductCard";
+import { ReviewList } from "@/components/reviews/ReviewList";
 import type { Product } from "@/types/product";
 
 interface ProductDetailClientProps {
@@ -58,30 +59,6 @@ function StarRating({ rating, size = 16 }: { rating: number; size?: number }) {
   );
 }
 
-function RatingBar({ stars, percent }: { stars: number; percent: number }) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="w-3 text-xs text-muted-foreground">{stars}</span>
-      <Star size={12} className="text-[#C9A96E]" fill="currentColor" />
-      <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-        <motion.div className="h-full rounded-full bg-[#C9A96E]" initial={{ width: 0 }} animate={{ width: `${percent}%` }} transition={{ duration: 0.8, delay: 0.2 }} />
-      </div>
-      <span className="w-8 text-right text-xs text-muted-foreground">{percent}%</span>
-    </div>
-  );
-}
-
-const mockReviews = [
-  { name: "Sarah Mitchell", date: "2026-04-15", rating: 5, title: "Absolutely stunning!", comment: "The quality exceeded my expectations. The fabric feels luxurious and the fit is perfect. Will definitely be ordering more from this collection.", verified: true },
-  { name: "James Cooper", date: "2026-04-10", rating: 4, title: "Great quality, minor sizing issue", comment: "Beautiful piece with excellent craftsmanship. I had to size up but customer service was helpful with the exchange. Highly recommend!", verified: true },
-  { name: "Aisha Rahman", date: "2026-03-28", rating: 5, title: "My new favorite", comment: "This has become my go-to outfit for special occasions. The attention to detail is incredible and it photographs beautifully.", verified: false },
-];
-
-const ratingDistribution = [
-  { stars: 5, percent: 65 }, { stars: 4, percent: 20 }, { stars: 3, percent: 10 },
-  { stars: 2, percent: 3 }, { stars: 1, percent: 2 },
-];
-
 export function ProductDetailClient({ product, relatedProducts }: ProductDetailClientProps) {
   const { isRTL, dir } = useLanguage();
   const { addItem } = useCartStore();
@@ -94,10 +71,6 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
-  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
-  const [reviewRating, setReviewRating] = useState(5);
-  const [reviewTitle, setReviewTitle] = useState("");
-  const [reviewComment, setReviewComment] = useState("");
   const [cartSuccess, setCartSuccess] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -131,9 +104,9 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
     setTimeout(() => setCopied(false), 2000);
   }, []);
 
-  const handleLightboxNav = useCallback((dir: number) => {
+  const handleLightboxNav = useCallback((navDir: number) => {
     setLightboxIndex((prev) => {
-      const next = prev + dir;
+      const next = prev + navDir;
       if (next < 0) return product.images.length - 1;
       if (next >= product.images.length) return 0;
       return next;
@@ -340,44 +313,11 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
         </Tabs.Content>
 
         <Tabs.Content value="reviews" className="mt-6" id="reviews">
-          <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
-            {/* Rating Summary */}
-            <div className="rounded-xl border border-border bg-card p-6">
-              <div className="text-center">
-                <span className="text-5xl font-bold">{product.rating}</span>
-                <p className="text-xs text-muted-foreground">out of 5</p>
-                <div className="mt-1 flex justify-center"><StarRating rating={product.rating} size={20} /></div>
-                <p className="mt-1 text-sm text-muted-foreground">Based on {product.reviewCount} reviews</p>
-              </div>
-              <div className="mt-4 space-y-1.5">
-                {ratingDistribution.map((r) => <RatingBar key={r.stars} stars={r.stars} percent={r.percent} />)}
-              </div>
-            </div>
-
-            {/* Reviews List */}
-            <div className="space-y-4">
-              {mockReviews.map((review, idx) => (
-                <div key={idx} className="rounded-xl border border-border bg-card p-5">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#C9A96E]/10 text-sm font-bold text-[#C9A96E]">{review.name[0]}</div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="font-medium">{review.name}</span>
-                          {review.verified && <span className="ml-2 text-[10px] text-green-500">✓ Verified Purchase</span>}
-                        </div>
-                        <StarRating rating={review.rating} size={14} />
-                      </div>
-                      <p className="mt-0.5 text-xs text-muted-foreground">{review.date}</p>
-                      {review.title && <p className="mt-1 text-sm font-semibold">{review.title}</p>}
-                      <p className="mt-1 text-sm text-muted-foreground">{review.comment}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <button onClick={() => setReviewDialogOpen(true)} className="rounded-full border border-[#C9A96E] px-6 py-2.5 text-sm font-medium text-[#C9A96E] transition hover:bg-[#C9A96E] hover:text-[#0F0F0F]">Write a Review</button>
-            </div>
-          </div>
+          <ReviewList
+            productId={product.id}
+            productRating={product.rating}
+            productReviewCount={product.reviewCount}
+          />
         </Tabs.Content>
       </Tabs.Root>
 
@@ -432,26 +372,6 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
           </Sheet.Content>
         </Sheet.Portal>
       </Sheet.Root>
-
-      {/* Review Dialog */}
-      <Dialog.Root open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-background p-6 shadow-xl">
-            <div className="flex items-center justify-between"><Dialog.Title className="text-lg font-bold">Write a Review</Dialog.Title><Dialog.Close className="rounded-full p-1 transition hover:bg-muted"><X size={20} /></Dialog.Close></div>
-            <div className="mt-4 space-y-4">
-              <div><label className="mb-1 block text-sm font-medium">Your Rating</label><div className="flex gap-1">{[1,2,3,4,5].map((s) => (
-                <button key={s} onClick={() => setReviewRating(s)} className="transition hover:scale-110">
-                  <Star size={24} className={s <= reviewRating ? "text-[#C9A96E]" : "text-muted-foreground/30"} fill={s <= reviewRating ? "currentColor" : "none"} />
-                </button>
-              ))}</div></div>
-              <div><label className="mb-1 block text-sm font-medium">Title (optional)</label><input type="text" value={reviewTitle} onChange={(e) => setReviewTitle(e.target.value)} className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A96E]" placeholder="Summarize your experience" /></div>
-              <div><label className="mb-1 block text-sm font-medium">Your Review</label><textarea value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} rows={4} className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A96E]" placeholder="Share your experience with this product..." /></div>
-              <button onClick={() => setReviewDialogOpen(false)} className="w-full rounded-full bg-[#C9A96E] py-3 font-semibold text-[#0F0F0F]">Submit Review</button>
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
     </div>
   );
 }

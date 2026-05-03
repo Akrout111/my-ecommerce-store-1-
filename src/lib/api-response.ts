@@ -9,6 +9,7 @@ interface SuccessMeta {
   page?: number;
   limit?: number;
   total?: number;
+  totalPages?: number;
 }
 
 interface SuccessResponse<T> {

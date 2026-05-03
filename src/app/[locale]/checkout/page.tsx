@@ -7,7 +7,7 @@ export default function CheckoutPage() {
   return (
     <main className="min-h-screen bg-background py-8">
       <div className="mx-auto max-w-6xl px-4">
-        <CheckoutFlow onOrderComplete={(orderId) => router.push(`/order-confirmation/${orderId}`)} />
+        <CheckoutFlow onOrderComplete={(orderId, _orderNumber) => router.push(`/order-confirmation?orderId=${orderId}`)} />
       </div>
     </main>
   );

@@ -1,19 +1,39 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 
-// Mock prisma
-const mockPrismaProductFindMany = vi.fn();
-const mockPrismaOrderCreate = vi.fn();
+// ---------------------------------------------------------------------------
+// Transaction mock functions
+// ---------------------------------------------------------------------------
+const mockTxProductFindMany = vi.fn();
+const mockTxProductFindUnique = vi.fn();
+const mockTxProductUpdate = vi.fn();
+const mockTxOrderCreate = vi.fn();
+
+const mockTx = {
+  product: {
+    findMany: (...args: unknown[]) => mockTxProductFindMany(...args),
+    findUnique: (...args: unknown[]) => mockTxProductFindUnique(...args),
+    update: (...args: unknown[]) => mockTxProductUpdate(...args),
+  },
+  order: {
+    create: (...args: unknown[]) => mockTxOrderCreate(...args),
+  },
+};
+
+// Post-transaction prisma mocks
 const mockPrismaOrderUpdate = vi.fn();
+const mockPrismaProductUpdate = vi.fn();
+const mockPrismaProductFindUnique = vi.fn();
 
 vi.mock('@/lib/db', () => ({
   prisma: {
-    product: {
-      findMany: (...args: unknown[]) => mockPrismaProductFindMany(...args),
-    },
+    $transaction: (fn: (tx: typeof mockTx) => Promise<unknown>) => fn(mockTx),
     order: {
-      create: (...args: unknown[]) => mockPrismaOrderCreate(...args),
       update: (...args: unknown[]) => mockPrismaOrderUpdate(...args),
+    },
+    product: {
+      update: (...args: unknown[]) => mockPrismaProductUpdate(...args),
+      findUnique: (...args: unknown[]) => mockPrismaProductFindUnique(...args),
     },
   },
 }));
@@ -39,6 +59,12 @@ vi.mock('@/lib/auth', () => ({
   authOptions: {},
 }));
 
+// Mock coupon-service
+const mockValidateCoupon = vi.fn();
+vi.mock('@/lib/coupon-service', () => ({
+  validateCoupon: (...args: unknown[]) => mockValidateCoupon(...args),
+}));
+
 // Import the handler after mocks are set up
 let POST: (request: NextRequest) => Promise<Response>;
 
@@ -47,12 +73,19 @@ beforeEach(async () => {
 
   // Default mocks
   mockGetServerSession.mockResolvedValue(null);
-  mockPrismaOrderCreate.mockResolvedValue({ id: 'order-123', orderNumber: 'PERSONA-TEST' });
+  mockTxOrderCreate.mockResolvedValue({ id: 'order-123', orderNumber: 'PF-20250101-ABCDEF' });
   mockPrismaOrderUpdate.mockResolvedValue({ id: 'order-123' });
   mockPaymentIntentsCreate.mockResolvedValue({
     id: 'pi_test',
     client_secret: 'cs_test_secret',
   });
+
+  // Default transaction mocks for stock operations
+  mockTxProductFindUnique.mockResolvedValue({ id: 'prod-1', stockCount: 99 });
+  mockTxProductUpdate.mockResolvedValue({ id: 'prod-1', stockCount: 99, inStock: true });
+
+  // Default: coupon is invalid (no discount)
+  mockValidateCoupon.mockResolvedValue({ valid: false, discount: 0, message: 'Invalid coupon code' });
 
   // Dynamically import the handler to get fresh module with mocks applied
   const routeModule = await import('@/app/api/checkout/create-payment-intent/route');
@@ -77,6 +110,8 @@ describe('create-payment-intent API', () => {
       price: 29.99,
       salePrice: null,
       images: '["/shirt.jpg"]',
+      inStock: true,
+      stockCount: 100,
     },
     {
       id: 'prod-2',
@@ -85,13 +120,14 @@ describe('create-payment-intent API', () => {
       price: 59.99,
       salePrice: 49.99,
       images: '["/jeans.jpg"]',
+      inStock: true,
+      stockCount: 50,
     },
   ];
 
   describe('server-side price verification', () => {
     it('verifies prices server-side using database, not submitted prices', async () => {
-      // Client submits items with tampered (higher) prices
-      mockPrismaProductFindMany.mockResolvedValue(mockProducts);
+      mockTxProductFindMany.mockResolvedValue(mockProducts);
 
       const request = createRequest({
         items: [
@@ -106,16 +142,14 @@ describe('create-payment-intent API', () => {
 
       expect(response.status).toBe(200);
       // Total should be based on server prices (29.99 + 49.99 = 79.98), not client-submitted prices
-      // subtotal = 79.98, shipping = 0 (> $50), tax = 79.98 * 0.08 = 6.3984, discount = 0
+      // subtotal = 79.98, shipping = 0 (>= $50), tax = 79.98 * 0.08 = 6.3984, discount = 0
       // total = 79.98 + 0 + 6.3984 - 0 = 86.3784
       expect(data.total).toBeCloseTo(86.38, 1);
       expect(data.clientSecret).toBe('cs_test_secret');
     });
 
     it('rejects tampered/inflated prices by using server prices', async () => {
-      // Client tries to submit with inflated price
-      // But the server fetches real prices from the database
-      mockPrismaProductFindMany.mockResolvedValue([
+      mockTxProductFindMany.mockResolvedValue([
         {
           id: 'prod-1',
           name: 'T-Shirt',
@@ -123,6 +157,8 @@ describe('create-payment-intent API', () => {
           price: 19.99, // Real price is $19.99, not the inflated client price
           salePrice: null,
           images: '["/shirt.jpg"]',
+          inStock: true,
+          stockCount: 100,
         },
       ]);
 
@@ -148,7 +184,7 @@ describe('create-payment-intent API', () => {
 
     it('returns 500 when a product is not found', async () => {
       // Product not in DB
-      mockPrismaProductFindMany.mockResolvedValue([]);
+      mockTxProductFindMany.mockResolvedValue([]);
 
       const request = createRequest({
         items: [
@@ -167,7 +203,7 @@ describe('create-payment-intent API', () => {
 
   describe('client_secret on success', () => {
     it('returns client_secret on success', async () => {
-      mockPrismaProductFindMany.mockResolvedValue(mockProducts);
+      mockTxProductFindMany.mockResolvedValue(mockProducts);
 
       const request = createRequest({
         items: [
@@ -182,12 +218,12 @@ describe('create-payment-intent API', () => {
       expect(response.status).toBe(200);
       expect(data.clientSecret).toBe('cs_test_secret');
       expect(data.orderId).toBe('order-123');
-      expect(data.orderNumber).toMatch(/^PERSONA-/);
+      expect(data.orderNumber).toMatch(/^PF-\d{8}-[0-9A-F]{6}$/);
       expect(typeof data.total).toBe('number');
     });
 
     it('creates a Stripe PaymentIntent with correct amount in cents', async () => {
-      mockPrismaProductFindMany.mockResolvedValue([
+      mockTxProductFindMany.mockResolvedValue([
         {
           id: 'prod-1',
           name: 'T-Shirt',
@@ -195,6 +231,8 @@ describe('create-payment-intent API', () => {
           price: 30,
           salePrice: null,
           images: '["/shirt.jpg"]',
+          inStock: true,
+          stockCount: 100,
         },
       ]);
 
@@ -223,7 +261,7 @@ describe('create-payment-intent API', () => {
     });
 
     it('creates order in database with correct data', async () => {
-      mockPrismaProductFindMany.mockResolvedValue([
+      mockTxProductFindMany.mockResolvedValue([
         {
           id: 'prod-1',
           name: 'T-Shirt',
@@ -231,6 +269,8 @@ describe('create-payment-intent API', () => {
           price: 29.99,
           salePrice: null,
           images: '["/shirt.jpg"]',
+          inStock: true,
+          stockCount: 100,
         },
       ]);
 
@@ -244,8 +284,8 @@ describe('create-payment-intent API', () => {
 
       await POST(request);
 
-      expect(mockPrismaOrderCreate).toHaveBeenCalledTimes(1);
-      const orderData = mockPrismaOrderCreate.mock.calls[0][0] as {
+      expect(mockTxOrderCreate).toHaveBeenCalledTimes(1);
+      const orderData = mockTxOrderCreate.mock.calls[0][0] as {
         data: {
           status: string;
           guestEmail: string;
@@ -259,7 +299,7 @@ describe('create-payment-intent API', () => {
 
   describe('coupon codes', () => {
     it('applies PERSONA10 coupon correctly (10% discount)', async () => {
-      mockPrismaProductFindMany.mockResolvedValue([
+      mockTxProductFindMany.mockResolvedValue([
         {
           id: 'prod-1',
           name: 'T-Shirt',
@@ -267,8 +307,16 @@ describe('create-payment-intent API', () => {
           price: 100,
           salePrice: null,
           images: '["/shirt.jpg"]',
+          inStock: true,
+          stockCount: 100,
         },
       ]);
+      mockValidateCoupon.mockResolvedValue({
+        valid: true,
+        discount: 10,
+        message: '10% discount applied',
+        coupon: { code: 'PERSONA10', discountPercent: 10 },
+      });
 
       const request = createRequest({
         items: [
@@ -282,13 +330,13 @@ describe('create-payment-intent API', () => {
       const data = await response.json();
 
       expect(response.status).toBe(200);
-      // subtotal = 100, shipping = 0 (> $50), tax = 8, discount = 10 (10% of 100)
+      // subtotal = 100, shipping = 0 (>= $50), tax = 8, discount = 10 (10% of 100)
       // total = 100 + 0 + 8 - 10 = 98
       expect(data.total).toBeCloseTo(98, 1);
     });
 
     it('applies SAVE15 coupon correctly (15% discount)', async () => {
-      mockPrismaProductFindMany.mockResolvedValue([
+      mockTxProductFindMany.mockResolvedValue([
         {
           id: 'prod-1',
           name: 'T-Shirt',
@@ -296,8 +344,16 @@ describe('create-payment-intent API', () => {
           price: 100,
           salePrice: null,
           images: '["/shirt.jpg"]',
+          inStock: true,
+          stockCount: 100,
         },
       ]);
+      mockValidateCoupon.mockResolvedValue({
+        valid: true,
+        discount: 15,
+        message: '15% discount applied',
+        coupon: { code: 'SAVE15', discountPercent: 15 },
+      });
 
       const request = createRequest({
         items: [
@@ -317,7 +373,7 @@ describe('create-payment-intent API', () => {
     });
 
     it('applies WELCOME20 coupon correctly (20% discount)', async () => {
-      mockPrismaProductFindMany.mockResolvedValue([
+      mockTxProductFindMany.mockResolvedValue([
         {
           id: 'prod-1',
           name: 'T-Shirt',
@@ -325,8 +381,16 @@ describe('create-payment-intent API', () => {
           price: 100,
           salePrice: null,
           images: '["/shirt.jpg"]',
+          inStock: true,
+          stockCount: 100,
         },
       ]);
+      mockValidateCoupon.mockResolvedValue({
+        valid: true,
+        discount: 20,
+        message: '20% discount applied',
+        coupon: { code: 'WELCOME20', discountPercent: 20 },
+      });
 
       const request = createRequest({
         items: [
@@ -346,7 +410,7 @@ describe('create-payment-intent API', () => {
     });
 
     it('handles invalid coupon code (no discount applied)', async () => {
-      mockPrismaProductFindMany.mockResolvedValue([
+      mockTxProductFindMany.mockResolvedValue([
         {
           id: 'prod-1',
           name: 'T-Shirt',
@@ -354,8 +418,11 @@ describe('create-payment-intent API', () => {
           price: 100,
           salePrice: null,
           images: '["/shirt.jpg"]',
+          inStock: true,
+          stockCount: 100,
         },
       ]);
+      // Default mock already returns invalid coupon
 
       const request = createRequest({
         items: [
@@ -375,7 +442,7 @@ describe('create-payment-intent API', () => {
     });
 
     it('coupon code is case-insensitive on server', async () => {
-      mockPrismaProductFindMany.mockResolvedValue([
+      mockTxProductFindMany.mockResolvedValue([
         {
           id: 'prod-1',
           name: 'T-Shirt',
@@ -383,8 +450,16 @@ describe('create-payment-intent API', () => {
           price: 100,
           salePrice: null,
           images: '["/shirt.jpg"]',
+          inStock: true,
+          stockCount: 100,
         },
       ]);
+      mockValidateCoupon.mockResolvedValue({
+        valid: true,
+        discount: 10,
+        message: '10% discount applied',
+        coupon: { code: 'PERSONA10', discountPercent: 10 },
+      });
 
       const request = createRequest({
         items: [
@@ -398,7 +473,7 @@ describe('create-payment-intent API', () => {
       const data = await response.json();
 
       expect(response.status).toBe(200);
-      // Should apply 10% discount like PERSONA10
+      // Should apply 10% discount like PERSONA10 (server handles case-insensitivity)
       expect(data.total).toBeCloseTo(98, 1);
     });
   });
@@ -411,6 +486,8 @@ describe('create-payment-intent API', () => {
       price: 9.99,
       salePrice: null,
       images: '["/socks.jpg"]',
+      inStock: true,
+      stockCount: 100,
     };
 
     const expensiveProduct = {
@@ -420,10 +497,12 @@ describe('create-payment-intent API', () => {
       price: 120,
       salePrice: null,
       images: '["/jacket.jpg"]',
+      inStock: true,
+      stockCount: 50,
     };
 
     it('charges $5.99 for standard shipping on orders under $50', async () => {
-      mockPrismaProductFindMany.mockResolvedValue([cheapProduct]);
+      mockTxProductFindMany.mockResolvedValue([cheapProduct]);
 
       const request = createRequest({
         items: [{ productId: 'prod-1', quantity: 1 }],
@@ -439,7 +518,7 @@ describe('create-payment-intent API', () => {
     });
 
     it('provides free standard shipping on orders over $50', async () => {
-      mockPrismaProductFindMany.mockResolvedValue([expensiveProduct]);
+      mockTxProductFindMany.mockResolvedValue([expensiveProduct]);
 
       const request = createRequest({
         items: [{ productId: 'prod-2', quantity: 1 }],
@@ -449,13 +528,13 @@ describe('create-payment-intent API', () => {
       const response = await POST(request);
       const data = await response.json();
 
-      // subtotal = 120, shipping = 0 (> $50), tax = 9.6, total = 129.6
+      // subtotal = 120, shipping = 0 (>= $50), tax = 9.6, total = 129.6
       expect(response.status).toBe(200);
       expect(data.total).toBeCloseTo(120 + 0 + 120 * 0.08, 1);
     });
 
     it('charges $12.99 for express shipping on orders under $50', async () => {
-      mockPrismaProductFindMany.mockResolvedValue([cheapProduct]);
+      mockTxProductFindMany.mockResolvedValue([cheapProduct]);
 
       const request = createRequest({
         items: [{ productId: 'prod-1', quantity: 1 }],
@@ -470,7 +549,7 @@ describe('create-payment-intent API', () => {
     });
 
     it('charges $24.99 for nextday shipping on orders under $50', async () => {
-      mockPrismaProductFindMany.mockResolvedValue([cheapProduct]);
+      mockTxProductFindMany.mockResolvedValue([cheapProduct]);
 
       const request = createRequest({
         items: [{ productId: 'prod-1', quantity: 1 }],
@@ -484,8 +563,8 @@ describe('create-payment-intent API', () => {
       expect(data.total).toBeCloseTo(9.99 + 24.99 + 9.99 * 0.08, 1);
     });
 
-    it('provides free express shipping on orders over $50', async () => {
-      mockPrismaProductFindMany.mockResolvedValue([expensiveProduct]);
+    it('charges express shipping even on orders over $50', async () => {
+      mockTxProductFindMany.mockResolvedValue([expensiveProduct]);
 
       const request = createRequest({
         items: [{ productId: 'prod-2', quantity: 1 }],
@@ -495,13 +574,13 @@ describe('create-payment-intent API', () => {
       const response = await POST(request);
       const data = await response.json();
 
-      // Free shipping for orders > $50 regardless of method
+      // Express shipping is $12.99 regardless of order total (only standard has free threshold)
       expect(response.status).toBe(200);
-      expect(data.total).toBeCloseTo(120 + 0 + 120 * 0.08, 1);
+      expect(data.total).toBeCloseTo(120 + 12.99 + 120 * 0.08, 1);
     });
 
     it('defaults to standard shipping when no method specified', async () => {
-      mockPrismaProductFindMany.mockResolvedValue([cheapProduct]);
+      mockTxProductFindMany.mockResolvedValue([cheapProduct]);
 
       const request = createRequest({
         items: [{ productId: 'prod-1', quantity: 1 }],
@@ -519,7 +598,7 @@ describe('create-payment-intent API', () => {
 
   describe('sale price handling', () => {
     it('uses salePrice when available instead of regular price', async () => {
-      mockPrismaProductFindMany.mockResolvedValue([
+      mockTxProductFindMany.mockResolvedValue([
         {
           id: 'prod-1',
           name: 'Jeans',
@@ -527,6 +606,8 @@ describe('create-payment-intent API', () => {
           price: 59.99,
           salePrice: 39.99,
           images: '["/jeans.jpg"]',
+          inStock: true,
+          stockCount: 50,
         },
       ]);
 
@@ -542,6 +623,60 @@ describe('create-payment-intent API', () => {
       // Sale price 39.99 < 50, so shipping = 5.99
       // total = 39.99 + 5.99 + 39.99 * 0.08
       expect(data.total).toBeCloseTo(39.99 + 5.99 + 39.99 * 0.08, 1);
+    });
+  });
+
+  describe('stock checking', () => {
+    it('returns 409 when product is out of stock', async () => {
+      mockTxProductFindMany.mockResolvedValue([
+        {
+          id: 'prod-1',
+          name: 'T-Shirt',
+          brand: 'TestBrand',
+          price: 29.99,
+          salePrice: null,
+          images: '["/shirt.jpg"]',
+          inStock: false,
+          stockCount: 0,
+        },
+      ]);
+
+      const request = createRequest({
+        items: [{ productId: 'prod-1', quantity: 1 }],
+        shippingMethod: 'standard',
+      });
+
+      const response = await POST(request);
+      expect(response.status).toBe(409);
+
+      const data = await response.json();
+      expect(data.error).toContain('Insufficient stock');
+    });
+
+    it('returns 409 when requested quantity exceeds stock', async () => {
+      mockTxProductFindMany.mockResolvedValue([
+        {
+          id: 'prod-1',
+          name: 'T-Shirt',
+          brand: 'TestBrand',
+          price: 29.99,
+          salePrice: null,
+          images: '["/shirt.jpg"]',
+          inStock: true,
+          stockCount: 2,
+        },
+      ]);
+
+      const request = createRequest({
+        items: [{ productId: 'prod-1', quantity: 5 }],
+        shippingMethod: 'standard',
+      });
+
+      const response = await POST(request);
+      expect(response.status).toBe(409);
+
+      const data = await response.json();
+      expect(data.error).toContain('Insufficient stock');
     });
   });
 });

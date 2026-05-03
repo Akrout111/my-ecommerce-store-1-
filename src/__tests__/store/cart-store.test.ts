@@ -38,6 +38,7 @@ beforeEach(() => {
     items: [],
     isOpen: false,
     couponCode: null,
+    serverValidatedDiscount: 0,
     itemCount: 0,
     subtotal: 0,
     shipping: 0,
@@ -365,48 +366,52 @@ describe('Cart Store', () => {
   });
 
   describe('coupon codes', () => {
-    it('applies PERSONA10 coupon (10% discount)', () => {
+    it('applies PERSONA10 coupon (10% discount via server)', () => {
       const store = useCartStore.getState();
       const item = createCartItem({ id: 'item-1', productId: 'prod-1', name: 'T-Shirt', price: 100 });
       store.addItem(item);
 
-      store.applyCoupon('PERSONA10');
+      // Server validates the coupon and returns the discount amount
+      store.applyCoupon('PERSONA10', 10);
 
       const state = useCartStore.getState();
       expect(state.couponCode).toBe('PERSONA10');
       expect(state.discount).toBeCloseTo(10, 2); // 10% of $100
     });
 
-    it('applies SAVE15 coupon (15% discount)', () => {
+    it('applies SAVE15 coupon (15% discount via server)', () => {
       const store = useCartStore.getState();
       const item = createCartItem({ id: 'item-1', productId: 'prod-1', name: 'T-Shirt', price: 100 });
       store.addItem(item);
 
-      store.applyCoupon('SAVE15');
+      // Server validates the coupon and returns the discount amount
+      store.applyCoupon('SAVE15', 15);
 
       const state = useCartStore.getState();
       expect(state.couponCode).toBe('SAVE15');
       expect(state.discount).toBeCloseTo(15, 2); // 15% of $100
     });
 
-    it('applies WELCOME20 coupon (20% discount)', () => {
+    it('applies WELCOME20 coupon (20% discount via server)', () => {
       const store = useCartStore.getState();
       const item = createCartItem({ id: 'item-1', productId: 'prod-1', name: 'T-Shirt', price: 100 });
       store.addItem(item);
 
-      store.applyCoupon('WELCOME20');
+      // Server validates the coupon and returns the discount amount
+      store.applyCoupon('WELCOME20', 20);
 
       const state = useCartStore.getState();
       expect(state.couponCode).toBe('WELCOME20');
       expect(state.discount).toBeCloseTo(20, 2); // 20% of $100
     });
 
-    it('applies FIRSTORDER coupon (20% discount)', () => {
+    it('applies FIRSTORDER coupon (20% discount via server)', () => {
       const store = useCartStore.getState();
       const item = createCartItem({ id: 'item-1', productId: 'prod-1', name: 'T-Shirt', price: 100 });
       store.addItem(item);
 
-      store.applyCoupon('FIRSTORDER');
+      // Server validates the coupon and returns the discount amount
+      store.applyCoupon('FIRSTORDER', 20);
 
       const state = useCartStore.getState();
       expect(state.couponCode).toBe('FIRSTORDER');
@@ -418,10 +423,11 @@ describe('Cart Store', () => {
       const item = createCartItem({ id: 'item-1', productId: 'prod-1', name: 'Jeans', price: 100 });
       store.addItem(item);
 
-      store.applyCoupon('PERSONA10');
+      // Server validates the coupon and returns the discount amount
+      store.applyCoupon('PERSONA10', 10);
 
       const state = useCartStore.getState();
-      // subtotal = 100, shipping = 0 (> $50), tax = 8, discount = 10
+      // subtotal = 100, shipping = 0 (>= $50), tax = 8, discount = 10
       // total = 100 + 0 + 8 - 10 = 98
       expect(state.subtotal).toBe(100);
       expect(state.shipping).toBe(0);
@@ -446,7 +452,8 @@ describe('Cart Store', () => {
       const store = useCartStore.getState();
       const item = createCartItem({ id: 'item-1', productId: 'prod-1', name: 'Jeans', price: 100 });
       store.addItem(item);
-      store.applyCoupon('PERSONA10');
+      // Server validates the coupon and returns the discount amount
+      store.applyCoupon('PERSONA10', 10);
 
       expect(useCartStore.getState().discount).toBeCloseTo(10, 2);
 
@@ -458,22 +465,25 @@ describe('Cart Store', () => {
       expect(state.total).toBeCloseTo(108, 2); // 100 + 0 shipping + 8 tax
     });
 
-    it('coupon discount is case-insensitive', () => {
+    it('stores coupon code as provided (case handling is server-side)', () => {
       const store = useCartStore.getState();
       const item = createCartItem({ id: 'item-1', productId: 'prod-1', name: 'T-Shirt', price: 100 });
       store.addItem(item);
 
-      store.applyCoupon('persona10');
+      // Store just records the code; case-insensitive validation is done server-side
+      store.applyCoupon('persona10', 10);
 
       const state = useCartStore.getState();
+      expect(state.couponCode).toBe('persona10');
       expect(state.discount).toBeCloseTo(10, 2);
     });
 
-    it('reapplies discount when adding items after coupon is set', () => {
+    it('preserves server-validated discount when adding items after coupon is set', () => {
       const store = useCartStore.getState();
       const item1 = createCartItem({ id: 'item-1', productId: 'prod-1', name: 'T-Shirt', price: 100 });
       store.addItem(item1);
-      store.applyCoupon('PERSONA10');
+      // Server validates 10% of $100 = $10 discount
+      store.applyCoupon('PERSONA10', 10);
 
       expect(useCartStore.getState().discount).toBeCloseTo(10, 2);
 
@@ -481,9 +491,9 @@ describe('Cart Store', () => {
       store.addItem(item2);
 
       const state = useCartStore.getState();
-      // subtotal = 150, discount = 15 (10% of 150)
+      // subtotal = 150, but discount stays at $10 (server-validated fixed amount)
       expect(state.subtotal).toBe(150);
-      expect(state.discount).toBeCloseTo(15, 2);
+      expect(state.discount).toBeCloseTo(10, 2);
     });
   });
 
@@ -495,7 +505,7 @@ describe('Cart Store', () => {
 
       store.addItem(item1);
       store.addItem(item2);
-      store.applyCoupon('PERSONA10');
+      store.applyCoupon('PERSONA10', 9);
 
       useCartStore.getState().clearCart();
 
@@ -536,25 +546,26 @@ describe('Cart Store', () => {
   });
 
   describe('edge cases', () => {
-    it('free shipping threshold is exactly $50 (no free shipping)', () => {
+    it('free shipping threshold is exactly $50 (free shipping with >= comparison)', () => {
       const store = useCartStore.getState();
       const item = createCartItem({ id: 'item-1', productId: 'prod-1', name: 'Item', price: 50 });
 
       store.addItem(item);
 
-      // subtotal = 50, which is NOT > 50, so shipping should be 5.99
+      // subtotal = 50, which is >= 50, so shipping should be 0 (free)
       const state = useCartStore.getState();
-      expect(state.shipping).toBe(5.99);
+      expect(state.shipping).toBe(0);
     });
 
-    it('free shipping when subtotal is just over $50', () => {
+    it('charges shipping when subtotal is just under $50', () => {
       const store = useCartStore.getState();
-      const item = createCartItem({ id: 'item-1', productId: 'prod-1', name: 'Item', price: 50.01 });
+      const item = createCartItem({ id: 'item-1', productId: 'prod-1', name: 'Item', price: 49.99 });
 
       store.addItem(item);
 
+      // subtotal = 49.99, which is < 50, so shipping should be 5.99
       const state = useCartStore.getState();
-      expect(state.shipping).toBe(0);
+      expect(state.shipping).toBe(5.99);
     });
 
     it('removing item that does not exist does not throw', () => {

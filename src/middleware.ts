@@ -8,6 +8,17 @@ const intlMiddleware = createIntlMiddleware({
   defaultLocale: DEFAULT_LOCALE,
 });
 
+// Public routes that don't require authentication
+const PUBLIC_PATHS = ['/auth', '/products', '/search', '/categories', '/deals', '/api'];
+
+function isPublicPath(pathname: string): boolean {
+  // Root path
+  if (pathname === '/' || pathname.match(/^\/(en|ar)(\/)?$/)) return true;
+  // Public routes
+  return PUBLIC_PATHS.some(path => pathname.includes(path)) ||
+    pathname.match(/^\/(en|ar)?\/?(products|search|categories|deals|auth)(\/|$)/) !== null;
+}
+
 export default withAuth(
   function middleware(req) {
     const { pathname } = req.nextUrl;
@@ -21,9 +32,19 @@ export default withAuth(
     return intlMiddleware(req);
   },
   {
+    pages: {
+      signIn: '/auth/login',
+    },
     callbacks: {
-      authorized: ({ token: _token }) => {
-        return true;
+      authorized: ({ token, req }) => {
+        const { pathname } = req.nextUrl;
+
+        // Public routes are always accessible
+        if (isPublicPath(pathname)) return true;
+
+        // Protected routes require authentication
+        // /account, /wishlist, /checkout, /admin require token
+        return !!token;
       },
     },
   }

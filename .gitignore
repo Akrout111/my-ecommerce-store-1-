@@ -74,3 +74,5 @@ test
 prompt
 
 server.log
+examples/
+download/

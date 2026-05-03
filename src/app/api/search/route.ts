@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { safeJsonParse } from '@/lib/utils/json';
+import { Prisma } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -9,7 +10,7 @@ export async function GET(request: NextRequest) {
 
   if (!q.trim()) return NextResponse.json({ products: [], total: 0 });
 
-  const where = {
+  const where: Prisma.ProductWhereInput = {
     OR: [
       { name: { contains: q } },
       { nameAr: { contains: q } },

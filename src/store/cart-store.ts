@@ -3,11 +3,18 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { CartItem } from "@/types/cart";
+import {
+  FREE_SHIPPING_THRESHOLD,
+  STANDARD_SHIPPING_COST,
+  TAX_RATE,
+} from "@/lib/constants";
+import { getShippingCost, type ShippingMethod } from "@/lib/shipping";
 
 interface CartState {
   items: CartItem[];
   isOpen: boolean;
   couponCode: string | null;
+  serverValidatedDiscount: number;
 
   // Computed
   itemCount: number;
@@ -25,23 +32,19 @@ interface CartState {
   toggleCart: () => void;
   openCart: () => void;
   closeCart: () => void;
-  applyCoupon: (code: string) => void;
+  applyCoupon: (code: string, serverDiscount?: number) => void;
   removeCoupon: () => void;
 }
 
-const VALID_COUPONS: Record<string, number> = {
-  PERSONA10: 0.10,
-  SAVE15: 0.15,
-  WELCOME20: 0.20,
-  FIRSTORDER: 0.20,
-};
-
-function calculateTotals(items: CartItem[], couponCode?: string | null) {
+function calculateTotals(
+  items: CartItem[],
+  couponCode?: string | null,
+  serverValidatedDiscount?: number
+) {
   const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
-  const shipping = subtotal > 50 ? 0 : 5.99;
-  const tax = subtotal * 0.08;
-  const discountRate = couponCode ? (VALID_COUPONS[couponCode.toUpperCase()] ?? 0) : 0;
-  const discount = subtotal * discountRate;
+  const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : STANDARD_SHIPPING_COST;
+  const tax = subtotal * TAX_RATE;
+  const discount = serverValidatedDiscount ?? 0;
   const total = subtotal + shipping + tax - discount;
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   return { subtotal, shipping, tax, discount, total, itemCount };
@@ -53,6 +56,7 @@ export const useCartStore = create<CartState>()(
       items: [],
       isOpen: false,
       couponCode: null,
+      serverValidatedDiscount: 0,
       itemCount: 0,
       subtotal: 0,
       shipping: 0,
@@ -63,27 +67,42 @@ export const useCartStore = create<CartState>()(
       addItem: (item: CartItem) => {
         const { items } = get();
         const existingIndex = items.findIndex(
-          (i) => i.productId === item.productId && i.size === item.size && i.color === item.color
+          (i) =>
+            i.productId === item.productId &&
+            i.size === item.size &&
+            i.color === item.color
         );
 
         let newItems: CartItem[];
         if (existingIndex >= 0) {
           newItems = items.map((i, idx) =>
             idx === existingIndex
-              ? { ...i, quantity: i.quantity + item.quantity, totalPrice: (i.quantity + item.quantity) * i.price }
+              ? {
+                  ...i,
+                  quantity: i.quantity + item.quantity,
+                  totalPrice: (i.quantity + item.quantity) * i.price,
+                }
               : i
           );
         } else {
           newItems = [...items, item];
         }
 
-        const totals = calculateTotals(newItems, get().couponCode);
+        const totals = calculateTotals(
+          newItems,
+          get().couponCode,
+          get().serverValidatedDiscount
+        );
         set({ items: newItems, ...totals });
       },
 
       removeItem: (itemId: string) => {
         const newItems = get().items.filter((i) => i.id !== itemId);
-        const totals = calculateTotals(newItems, get().couponCode);
+        const totals = calculateTotals(
+          newItems,
+          get().couponCode,
+          get().serverValidatedDiscount
+        );
         set({ items: newItems, ...totals });
       },
 
@@ -93,9 +112,15 @@ export const useCartStore = create<CartState>()(
           return;
         }
         const newItems = get().items.map((i) =>
-          i.id === itemId ? { ...i, quantity, totalPrice: quantity * i.price } : i
+          i.id === itemId
+            ? { ...i, quantity, totalPrice: quantity * i.price }
+            : i
         );
-        const totals = calculateTotals(newItems, get().couponCode);
+        const totals = calculateTotals(
+          newItems,
+          get().couponCode,
+          get().serverValidatedDiscount
+        );
         set({ items: newItems, ...totals });
       },
 
@@ -109,6 +134,7 @@ export const useCartStore = create<CartState>()(
           discount: 0,
           total: 0,
           couponCode: null,
+          serverValidatedDiscount: 0,
         });
       },
 
@@ -116,15 +142,20 @@ export const useCartStore = create<CartState>()(
       openCart: () => set({ isOpen: true }),
       closeCart: () => set({ isOpen: false }),
 
-      applyCoupon: (code: string) => {
+      applyCoupon: (code: string, serverDiscount?: number) => {
         const { items } = get();
-        const totals = calculateTotals(items, code);
-        set({ couponCode: code, ...totals });
+        const discount = serverDiscount ?? 0;
+        const totals = calculateTotals(items, code, discount);
+        set({
+          couponCode: code,
+          serverValidatedDiscount: discount,
+          ...totals,
+        });
       },
       removeCoupon: () => {
         const { items } = get();
-        const totals = calculateTotals(items, null);
-        set({ couponCode: null, ...totals });
+        const totals = calculateTotals(items, null, 0);
+        set({ couponCode: null, serverValidatedDiscount: 0, ...totals });
       },
     }),
     {
@@ -132,7 +163,12 @@ export const useCartStore = create<CartState>()(
       partialize: (state) => ({
         items: state.items,
         couponCode: state.couponCode,
+        serverValidatedDiscount: state.serverValidatedDiscount,
       }),
     }
   )
 );
+
+// Re-export for use in other modules
+export { getShippingCost, type ShippingMethod };
+export { FREE_SHIPPING_THRESHOLD, STANDARD_SHIPPING_COST, TAX_RATE } from "@/lib/constants";

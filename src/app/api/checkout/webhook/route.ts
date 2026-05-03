@@ -20,18 +20,51 @@ export async function POST(request: NextRequest) {
   switch (event.type) {
     case 'payment_intent.succeeded': {
       const pi = event.data.object as Stripe.PaymentIntent;
-      await prisma.order.update({
+      const order = await prisma.order.update({
         where: { stripePaymentIntentId: pi.id },
         data: { status: 'paid', paidAt: new Date() },
+        include: { items: true },
       });
+
+      // Increment coupon usage if a coupon was applied
+      if (order.couponCode) {
+        try {
+          const { incrementCouponUsage } = await import('@/lib/coupon-service');
+          await incrementCouponUsage(order.couponCode);
+        } catch {
+          // Non-critical — don't fail the webhook for coupon usage tracking
+        }
+      }
       break;
     }
     case 'payment_intent.payment_failed': {
       const pi = event.data.object as Stripe.PaymentIntent;
-      await prisma.order.update({
+
+      // Mark order as failed
+      const order = await prisma.order.update({
         where: { stripePaymentIntentId: pi.id },
         data: { status: 'failed' },
+        include: { items: true },
       });
+
+      // Reverse stock deduction for each item
+      for (const item of order.items) {
+        await prisma.product.update({
+          where: { id: item.productId },
+          data: {
+            stockCount: { increment: item.quantity },
+          },
+        });
+        const updated = await prisma.product.findUnique({
+          where: { id: item.productId },
+        });
+        if (updated && updated.stockCount > 0) {
+          await prisma.product.update({
+            where: { id: item.productId },
+            data: { inStock: true },
+          });
+        }
+      }
       break;
     }
   }

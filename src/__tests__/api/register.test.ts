@@ -93,7 +93,7 @@ describe('POST /api/auth/register', () => {
     const request = makeRequest({
       name: 'New User',
       email: 'newuser@example.com',
-      password: 'SecurePass123',
+      password: 'SecurePass123!',
     });
 
     const response = await POST(request);
@@ -104,7 +104,7 @@ describe('POST /api/auth/register', () => {
     expect(data.data.user.email).toBe('newuser@example.com');
 
     // Verify bcrypt.hash was called with password and salt rounds
-    expect(mockBcryptHash).toHaveBeenCalledWith('SecurePass123', 12);
+    expect(mockBcryptHash).toHaveBeenCalledWith('SecurePass123!', 12);
 
     // Verify prisma.user.create was called with hashed password
     expect(mockCreate).toHaveBeenCalledWith({
@@ -128,7 +128,7 @@ describe('POST /api/auth/register', () => {
     const request = makeRequest({
       name: 'New User',
       email: 'newuser@example.com',
-      password: 'SecurePass123',
+      password: 'SecurePass123!',
     });
 
     const response = await POST(request);
@@ -151,7 +151,7 @@ describe('POST /api/auth/register', () => {
     const request = makeRequest({
       name: 'Another User',
       email: 'existing@example.com',
-      password: 'SecurePass123',
+      password: 'SecurePass123!',
     });
 
     const response = await POST(request);
@@ -175,7 +175,7 @@ describe('POST /api/auth/register', () => {
     const request = makeRequest({
       name: 'Another User',
       email: 'existing@example.com',
-      password: 'SecurePass123',
+      password: 'SecurePass123!',
     });
 
     const response = await POST(request);
@@ -212,7 +212,7 @@ describe('POST /api/auth/register', () => {
     const request = makeRequest({
       name: 'Test User',
       email: 'not-an-email',
-      password: 'SecurePass123',
+      password: 'SecurePass123!',
     });
 
     const response = await POST(request);
@@ -231,7 +231,7 @@ describe('POST /api/auth/register', () => {
     const request = makeRequest({
       name: 'A',
       email: 'test@example.com',
-      password: 'SecurePass123',
+      password: 'SecurePass123!',
     });
 
     const response = await POST(request);
@@ -288,7 +288,7 @@ describe('POST /api/auth/register', () => {
       {
         name: 'Test User',
         email: 'test@example.com',
-        password: 'SecurePass123',
+        password: 'SecurePass123!',
       },
       { 'x-forwarded-for': '203.0.113.1' }
     );
@@ -315,7 +315,7 @@ describe('POST /api/auth/register', () => {
     const request = makeRequest({
       name: 'Test User',
       email: 'test@example.com',
-      password: 'SecurePass123',
+      password: 'SecurePass123!',
     });
 
     const response = await POST(request);
@@ -335,7 +335,7 @@ describe('POST /api/auth/register', () => {
     const request = makeRequest({
       name: 'Test User',
       email: 'test@example.com',
-      password: 'SecurePass123',
+      password: 'SecurePass123!',
     });
 
     const response = await POST(request);
@@ -354,7 +354,7 @@ describe('POST /api/auth/register', () => {
     const request = makeRequest({
       name: 'Test User',
       email: 'test@example.com',
-      password: 'SecurePass123',
+      password: 'SecurePass123!',
     });
 
     const response = await POST(request);
@@ -370,7 +370,7 @@ describe('POST /api/auth/register', () => {
     const request = makeRequest({
       name: 'Test User',
       email: 'test@example.com',
-      password: 'SecurePass123',
+      password: 'SecurePass123!',
     });
 
     const response = await POST(request);

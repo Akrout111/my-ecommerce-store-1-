@@ -45,6 +45,8 @@ export const DEFAULT_LOCALE = "en";
 // Shipping
 export const FREE_SHIPPING_THRESHOLD = 50;
 export const STANDARD_SHIPPING_COST = 5.99;
+export const EXPRESS_SHIPPING_COST = 12.99;
+export const NEXTDAY_SHIPPING_COST = 24.99;
 
 // Tax
 export const TAX_RATE = 0.08;

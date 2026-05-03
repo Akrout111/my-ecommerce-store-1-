@@ -7,6 +7,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { CartSheet } from "@/components/cart/CartSheet";
 import { StyleAssistantLoader } from '@/components/ai/StyleAssistantLoader';
+import { WishlistSyncProvider } from '@/components/providers/wishlist-sync-provider';
 import { LanguageProvider } from "@/components/ecommerce/language-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { isValidLocale } from "@/i18n/config";
@@ -98,6 +99,7 @@ export default async function LocaleLayout({
           disableTransitionOnChange
         >
           <LanguageProvider>
+          <WishlistSyncProvider>
             <a
               href="#main"
               className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:rounded focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
@@ -114,6 +116,7 @@ export default async function LocaleLayout({
               <StyleAssistantLoader />
             </div>
             <CartSheet />
+          </WishlistSyncProvider>
           </LanguageProvider>
         </ThemeProvider>
         </Providers>

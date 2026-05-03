@@ -20,7 +20,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = validateCoupon(code, cartTotal);
+    const result = await validateCoupon(code, cartTotal);
 
     return NextResponse.json(result);
   } catch {

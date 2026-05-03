@@ -63,10 +63,18 @@ const deals = [
   { productId: 'prod_25', title: 'Limited Offer', titleAr: 'عرض محدود', discountPercent: 40, startsAt: new Date(), endsAt: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), isActive: true, maxQuantity: 100, soldCount: 12 },
 ];
 
+const coupons = [
+  { code: 'PERSONA10', discountPercent: 10, isActive: true, minOrderAmount: 0 },
+  { code: 'SAVE15', discountPercent: 15, isActive: true, minOrderAmount: 50 },
+  { code: 'WELCOME20', discountPercent: 20, isActive: true, minOrderAmount: 75 },
+  { code: 'FIRSTORDER', discountPercent: 20, isActive: true, minOrderAmount: 0 },
+];
+
 async function main() {
   // Delete in order
   await prisma.deal.deleteMany();
   await prisma.cartItem.deleteMany();
+  await prisma.coupon.deleteMany();
   await prisma.product.deleteMany();
   await prisma.category.deleteMany();
 
@@ -86,7 +94,12 @@ async function main() {
     await prisma.deal.create({ data: deal });
   }
 
-  console.error('✅ Seeded: 6 categories, 30 products, 5 deals');
+  // Create coupons
+  for (const coupon of coupons) {
+    await prisma.coupon.create({ data: coupon });
+  }
+
+  console.error('✅ Seeded: 6 categories, 30 products, 5 deals, 4 coupons');
 }
 
 main()
