@@ -17,6 +17,7 @@ ARABIC: [Arabic translation of the same description]
 
 Respond ONLY with the two labeled sections. No other text.`;
 
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const response = await fetch(process.env.LLM_API_URL!, {
       method: 'POST',
       headers: {
@@ -41,7 +42,7 @@ Respond ONLY with the two labeled sections. No other text.`;
       descriptionEn: enMatch?.[1]?.trim() || text,
       descriptionAr: arMatch?.[1]?.trim() || '',
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Generation failed' }, { status: 500 });
   }
 }

@@ -316,6 +316,7 @@ export function SearchFilters({
                   <X size={20} />
                 </Sheet.Close>
               </div>
+              {/* eslint-disable-next-line react-hooks/static-components */}
               <FilterContent />
             </Sheet.Content>
           </Sheet.Portal>
@@ -324,6 +325,7 @@ export function SearchFilters({
 
       {/* Desktop Sidebar */}
       <aside className="hidden lg:block lg:sticky lg:top-24 lg:self-start lg:w-[260px]">
+        {/* eslint-disable-next-line react-hooks/static-components */}
         <FilterContent />
       </aside>
     </>

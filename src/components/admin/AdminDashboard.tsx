@@ -8,15 +8,12 @@ import {
   ShoppingBag,
   Users,
   Package,
-  Eye,
   MoreHorizontal,
   ArrowUpRight,
 } from "lucide-react";
 import {
   AreaChart,
   Area,
-  BarChart,
-  Bar,
   PieChart,
   Pie,
   Cell,
@@ -121,7 +118,7 @@ const statusStyles = {
   delivered: "bg-emerald-500/10 text-emerald-500",
 };
 
-function CustomTooltip({ active, payload, label }: any) {
+function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) {
   if (active && payload && payload.length) {
     return (
       <div className="rounded-lg border border-[#C9A96E]/30 bg-background px-3 py-2 shadow-lg">
@@ -257,6 +254,7 @@ export function AdminDashboard() {
                 ))}
               </Pie>
               <Tooltip
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 formatter={(value: any) => `$${Number(value).toLocaleString()}`}
                 contentStyle={{
                   borderRadius: "8px",

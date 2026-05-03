@@ -6,11 +6,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  User, Package, Heart, MapPin, Lock, Eye, EyeOff, Loader2,
-  Pencil, Trash2, Star, Check, X, ChevronRight, LogOut,
+  User, Package, Heart, MapPin, Lock, Eye,
+  Pencil, Trash2, X, LogOut,
   Smartphone, Mail, Bell, Shield, AlertTriangle, Camera,
 } from "lucide-react";
-import * as Tabs from "@radix-ui/react-tabs";
+
 import * as Dialog from "@radix-ui/react-dialog";
 import Image from "next/image";
 import { signOut } from "next-auth/react";
@@ -375,6 +375,7 @@ export function AccountDashboard({ user, orders, wishlist, addresses: initialAdd
                 <input {...passwordForm.register("newPassword")} type={showNewPassword ? "text" : "password"} className="w-full rounded-xl border bg-background py-3 pl-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A96E]" />
                 <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"><Eye size={16} /></button>
               </div>
+              {/* eslint-disable-next-line react-hooks/incompatible-library */}
               <PasswordStrength password={passwordForm.watch("newPassword") || ""} />
             </div>
             <div>

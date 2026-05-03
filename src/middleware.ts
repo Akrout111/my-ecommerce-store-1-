@@ -22,7 +22,7 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token }) => {
+      authorized: ({ token: _token }) => {
         return true;
       },
     },

@@ -24,6 +24,7 @@ export async function uploadImage(file: File): Promise<string> {
       },
       (error, result) => {
         if (error) reject(error);
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         else resolve(result!.secure_url);
       }
     ).end(buffer);

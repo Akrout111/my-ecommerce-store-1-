@@ -5,13 +5,16 @@ import Stripe from 'stripe';
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const signature = request.headers.get('stripe-signature')!;
 
   let event: Stripe.Event;
   try {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET!);
-  } catch (err: any) {
-    return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: `Webhook Error: ${message}` }, { status: 400 });
   }
 
   switch (event.type) {

@@ -258,7 +258,7 @@ export function ProductCard({
   variant = "default",
   priority = false,
 }: ProductCardProps) {
-  const { isRTL } = useLanguage();
+  const { isRTL: _isRTL } = useLanguage();
   const { addItem } = useCartStore();
   const { items: wishlistItems, toggleItem } = useWishlistStore();
   const [imageError, setImageError] = useState(false);

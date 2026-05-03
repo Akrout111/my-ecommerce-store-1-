@@ -12,10 +12,7 @@ import { NewsletterSection } from '@/components/home/NewsletterSection';
 import { Suspense } from 'react';
 import { ProductCardSkeleton } from '@/components/shared/ProductCardSkeleton';
 import type { Product } from '@/types/product';
-
-function safeJsonParse(str: string, fallback: unknown) {
-  try { return JSON.parse(str); } catch { return fallback; }
-}
+import { safeJsonParse } from '@/lib/utils/json';
 
 function ProductSectionSkeleton() {
   return (

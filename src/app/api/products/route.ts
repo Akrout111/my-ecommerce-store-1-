@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { safeJsonParse } from '@/lib/utils/json';
+import { Prisma } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -13,7 +15,7 @@ export async function GET(request: NextRequest) {
   const limit = 12;
 
   try {
-    const where: Record<string, any> = {};
+    const where: Prisma.ProductWhereInput = {};
     if (category) where.category = category;
     if (featured) where.isFeatured = true;
     if (isNew) where.isNew = true;
@@ -27,7 +29,7 @@ export async function GET(request: NextRequest) {
         { tags: { contains: search } },
       ];
     }
-    const orderBy: Record<string, any> =
+    const orderBy: Prisma.ProductOrderByWithRelationInput =
       sort === 'price-asc' ? { price: 'asc' }
       : sort === 'price-desc' ? { price: 'desc' }
       : sort === 'best-selling' ? { reviewCount: 'desc' }
@@ -57,8 +59,4 @@ export async function GET(request: NextRequest) {
     console.error('[API/products]', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
-
-function safeJsonParse(str: string, fallback: any) {
-  try { return JSON.parse(str); } catch { return fallback; }
 }

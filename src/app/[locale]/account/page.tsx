@@ -5,12 +5,9 @@ import { cookies } from 'next/headers';
 import { AccountDashboard } from '@/components/account/AccountDashboard';
 import { prisma } from '@/lib/db';
 import type { Product } from '@/types/product';
+import { safeJsonParse } from '@/lib/utils/json';
 
 export const metadata = { title: 'My Account | Persona' };
-
-function safeJsonParse(str: string, fallback: unknown) {
-  try { return JSON.parse(str); } catch { return fallback; }
-}
 
 function parseProduct(p: {
   id: string; name: string; nameAr?: string | null;

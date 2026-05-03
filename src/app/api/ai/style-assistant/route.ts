@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
 
     const contextualSystem = `${SYSTEM_PROMPT}\nCurrent page: ${currentPage || '/'}`;
 
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const response = await fetch(process.env.LLM_API_URL!, {
       method: 'POST',
       headers: {

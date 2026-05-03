@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { COLORS } from "@/lib/constants";
 
 export function CartSheet() {
-  const { t, isRTL, formatCurrency } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { items, isOpen, closeCart, itemCount } = useCartStore();
 
   return (

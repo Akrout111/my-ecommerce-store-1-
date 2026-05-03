@@ -10,7 +10,6 @@ import { StyleAssistantLoader } from '@/components/ai/StyleAssistantLoader';
 import { LanguageProvider } from "@/components/ecommerce/language-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { isValidLocale } from "@/i18n/config";
-import type { Locale } from "@/types/i18n";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

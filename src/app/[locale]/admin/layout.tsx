@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Diamond, LayoutDashboard, Package, ShoppingBag, Users, Tag, BarChart2, Settings, Menu, X, LogOut } from 'lucide-react';
+import { Diamond, LayoutDashboard, Package, ShoppingBag, Users, Tag, BarChart2, Settings, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { COLORS } from '@/lib/constants';
 

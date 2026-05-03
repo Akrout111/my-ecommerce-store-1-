@@ -1,9 +1,7 @@
 import { prisma } from '@/lib/db';
 import { SearchPageClient } from '@/components/search/SearchPageClient';
-
-function safeJsonParse(str: string, fallback: any) {
-  try { return JSON.parse(str); } catch { return fallback; }
-}
+import { safeJsonParse } from '@/lib/utils/json';
+import { Prisma } from '@prisma/client';
 
 interface Props {
   searchParams: Promise<{ q?: string; category?: string; sort?: string; page?: string }>;
@@ -17,7 +15,7 @@ export default async function SearchPage({ searchParams }: Props) {
   const page = parseInt(sp.page || '1', 10);
   const limit = 24;
 
-  const where: Record<string, any> = {};
+  const where: Prisma.ProductWhereInput = {};
   if (query) {
     where.OR = [
       { name: { contains: query } },
@@ -28,7 +26,7 @@ export default async function SearchPage({ searchParams }: Props) {
   }
   if (category) where.category = category;
 
-  const orderBy: Record<string, any> =
+  const orderBy: Prisma.ProductOrderByWithRelationInput =
     sort === 'price-asc' ? { price: 'asc' }
     : sort === 'price-desc' ? { price: 'desc' }
     : sort === 'rating' ? { rating: 'desc' }
@@ -41,10 +39,10 @@ export default async function SearchPage({ searchParams }: Props) {
 
   const parsed = products.map((p) => ({
     ...p,
-    images: safeJsonParse(p.images, []),
-    sizes: safeJsonParse(p.sizes, []),
-    colors: safeJsonParse(p.colors, []),
-    tags: safeJsonParse(p.tags ?? '[]', []),
+    images: safeJsonParse(p.images, []) as string[],
+    sizes: safeJsonParse(p.sizes, []) as string[],
+    colors: safeJsonParse(p.colors, []) as string[],
+    tags: safeJsonParse(p.tags ?? '[]', []) as string[],
   }));
 
   return (

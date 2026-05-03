@@ -32,6 +32,7 @@ export function SearchPageClient({ query, initialProducts, total, currentPage, t
   const searchParams = useSearchParams();
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     searchParams.get('category') ? [searchParams.get('category')!] : []
   );
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);

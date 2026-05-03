@@ -26,7 +26,7 @@ export async function GET() {
       ordersByStatus: ordersByStatus.map((o) => ({ status: o.status, count: o._count.status })),
       recentOrders,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

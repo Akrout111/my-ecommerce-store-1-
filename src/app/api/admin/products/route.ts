@@ -4,10 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { ProductCreateInput } from '@/lib/validations/product';
 import { z } from 'zod';
-
-function safeJsonParse(str: string, fallback: unknown) {
-  try { return JSON.parse(str); } catch { return fallback; }
-}
+import { safeJsonParse } from '@/lib/utils/json';
 
 export async function GET() {
   try {
@@ -24,7 +21,7 @@ export async function GET() {
       tags: safeJsonParse(p.tags ?? '[]', []),
     }));
     return NextResponse.json({ products: parsed });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -72,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     const product = await prisma.product.create({ data: prismaData });
     return NextResponse.json({ product }, { status: 201 });
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Validation failed', details: error.issues },

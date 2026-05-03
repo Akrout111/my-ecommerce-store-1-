@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Check, ChevronRight, ChevronLeft, Lock, Truck, Package,
-  Loader2, Zap, CircleArrowUp, CreditCard, X,
+  Loader2, Zap, CircleArrowUp, CreditCard,
 } from "lucide-react";
 import * as RadioGroup from "@radix-ui/react-radio-group";
 import Image from "next/image";

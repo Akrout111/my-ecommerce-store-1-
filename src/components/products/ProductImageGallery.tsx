@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { ShoppingBag } from "lucide-react";
 import {
   Carousel,
   CarouselContent,
@@ -10,7 +9,6 @@ import {
   CarouselNext,
 } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
-import { COLORS } from "@/lib/constants";
 
 interface ProductImageGalleryProps {
   images?: { url: string; alt: string }[];

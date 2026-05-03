@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Flame } from "lucide-react";
 import { useLanguage } from "@/components/ecommerce/language-provider";

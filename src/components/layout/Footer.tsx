@@ -6,7 +6,7 @@ import { useLanguage } from "@/components/ecommerce/language-provider";
 import { COLORS, APP_NAME } from "@/lib/constants";
 
 export function Footer() {
-  const { t, isRTL } = useLanguage();
+  const { t } = useLanguage();
 
   const shopLinks = [
     { label: t("nav.women"), href: "/#women" },

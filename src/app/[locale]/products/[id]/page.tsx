@@ -2,11 +2,8 @@ import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { ProductDetailClient } from '@/components/products/ProductDetailClient';
 import { ProductJsonLd } from '@/components/seo/ProductJsonLd';
+import { safeJsonParse } from '@/lib/utils/json';
 import type { Metadata } from 'next';
-
-function safeJsonParse(str: string, fallback: any) {
-  try { return JSON.parse(str); } catch { return fallback; }
-}
 
 interface Props { params: Promise<{ id: string; locale: string }> }
 
@@ -36,12 +33,30 @@ export default async function ProductPage({ params }: Props) {
     orderBy: { reviewCount: 'desc' },
   });
 
-  const parseProduct = (p: any) => ({
+  type ProductRow = {
+    id: string; name: string; nameAr?: string | null;
+    description: string; descriptionAr?: string | null;
+    price: number; salePrice?: number | null; brand: string;
+    images: string; category: string; subcategory?: string | null;
+    sizes: string; colors: string;
+    rating: number; reviewCount: number;
+    inStock: boolean; stockCount: number;
+    isFeatured?: boolean; isNew: boolean; isBestSeller: boolean;
+    tags?: string | null;
+    createdAt: Date; updatedAt: Date;
+  };
+
+  const parseProduct = (p: ProductRow) => ({
     ...p,
-    images: safeJsonParse(p.images, []),
-    sizes: safeJsonParse(p.sizes, []),
-    colors: safeJsonParse(p.colors, []),
-    tags: safeJsonParse(p.tags ?? '[]', []),
+    salePrice: p.salePrice ?? undefined,
+    nameAr: p.nameAr ?? undefined,
+    descriptionAr: p.descriptionAr ?? undefined,
+    subcategory: p.subcategory ?? undefined,
+    isFeatured: p.isFeatured ?? undefined,
+    images: safeJsonParse(p.images, []) as string[],
+    sizes: safeJsonParse(p.sizes, []) as string[],
+    colors: safeJsonParse(p.colors, []) as string[],
+    tags: safeJsonParse(p.tags ?? '[]', []) as string[],
   });
 
   return (

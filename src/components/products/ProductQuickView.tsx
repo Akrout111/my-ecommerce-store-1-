@@ -18,8 +18,8 @@ export function ProductImageGallery({ images }: { images: string[] }) {
 
 export function ProductQuickView({
   product,
-  open,
-  onOpenChange,
+  open: _open,
+  onOpenChange: _onOpenChange,
 }: {
   product: Product | null;
   open: boolean;

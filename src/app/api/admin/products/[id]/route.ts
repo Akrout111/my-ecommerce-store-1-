@@ -71,7 +71,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const { id } = await params;
     await prisma.product.delete({ where: { id } });
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

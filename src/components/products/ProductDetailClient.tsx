@@ -15,6 +15,7 @@ import { useLanguage } from "@/components/ecommerce/language-provider";
 import { useCartStore } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
 import { ProductCard } from "@/components/products/ProductCard";
+import type { Product } from "@/types/product";
 
 interface ProductDetailClientProps {
   product: {
@@ -29,7 +30,7 @@ interface ProductDetailClientProps {
     tags: string[];
     createdAt: string | Date; updatedAt: string | Date;
   };
-  relatedProducts: any[];
+  relatedProducts: Product[];
 }
 
 const colorMap: Record<string, string> = {

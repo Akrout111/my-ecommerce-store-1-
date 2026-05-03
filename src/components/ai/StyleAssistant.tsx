@@ -7,7 +7,6 @@ import {
   X,
   Send,
   Bot,
-  User,
   Loader2,
 } from "lucide-react";
 

@@ -13,7 +13,6 @@ import {
   Loader2,
   Diamond,
   User,
-  Check,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

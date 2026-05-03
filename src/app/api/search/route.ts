@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-
-function safeJsonParse(str: string, fallback: any) {
-  try { return JSON.parse(str); } catch { return fallback; }
-}
+import { safeJsonParse } from '@/lib/utils/json';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -29,10 +26,10 @@ export async function GET(request: NextRequest) {
 
   const parsed = products.map((p) => ({
     ...p,
-    images: safeJsonParse(p.images, []),
-    sizes: safeJsonParse(p.sizes, []),
-    colors: safeJsonParse(p.colors, []),
-    tags: safeJsonParse(p.tags ?? '[]', []),
+    images: safeJsonParse(p.images, []) as string[],
+    sizes: safeJsonParse(p.sizes, []) as string[],
+    colors: safeJsonParse(p.colors, []) as string[],
+    tags: safeJsonParse(p.tags ?? '[]', []) as string[],
   }));
 
   return NextResponse.json({ products: parsed, total });

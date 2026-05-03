@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { safeJsonParse } from "@/lib/utils/json";
 
 // In-memory cart store (simple implementation)
 let cartItems: Array<{
@@ -10,10 +11,6 @@ let cartItems: Array<{
   color?: string;
 }> = [];
 
-function safeJsonParse(str: string, fallback: any) {
-  try { return JSON.parse(str); } catch { return fallback; }
-}
-
 export async function GET() {
   const productIds = cartItems.map((item) => item.productId);
   const products = productIds.length > 0
@@ -22,10 +19,10 @@ export async function GET() {
 
   const productMap = new Map(products.map((p) => [p.id, {
     ...p,
-    images: safeJsonParse(p.images, []),
-    sizes: safeJsonParse(p.sizes, []),
-    colors: safeJsonParse(p.colors, []),
-    tags: safeJsonParse(p.tags ?? '[]', []),
+    images: safeJsonParse(p.images, []) as string[],
+    sizes: safeJsonParse(p.sizes, []) as string[],
+    colors: safeJsonParse(p.colors, []) as string[],
+    tags: safeJsonParse(p.tags ?? '[]', []) as string[],
   }]));
 
   const itemsWithProducts = cartItems.map((item) => ({

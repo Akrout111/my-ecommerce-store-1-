@@ -45,6 +45,7 @@ export function LoginForm() {
     if (result?.error) {
       setError("Invalid email or password. Please try again.");
     } else if (result?.ok) {
+      // eslint-disable-next-line react-hooks/immutability
       window.location.href = "/";
     }
   };
