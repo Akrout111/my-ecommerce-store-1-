@@ -414,3 +414,44 @@ Stage Summary:
 - Rate limiting: in-memory store, IP separation, window expiry, getClientIp
 - Key finding: NextAuth v4 CredentialsProvider must be mocked for unit tests to work with vitest module mocking
 - No changes to production code
+
+---
+Task ID: 4-combined
+Agent: Performance Optimization Agent
+Task: Phase 4 — Performance & Bundle Optimization (Tasks 4.1, 4.2, 4.3)
+
+Work Log:
+- Task 4.1: Replaced Three.js/R3F hero with lightweight CSS animation
+  - Rewrote src/components/home/HeroCanvas.tsx: removed all Three.js imports (Canvas, useFrame, Float, Stars, OrbitControls, THREE)
+  - New HeroCanvas: 28 floating golden/rose sparkle particles, 5 animated gradient orbs, 2 rotating rings (gold + rose), SVG geometric accent lines
+  - All animations defined in src/app/globals.css (hero-orb, hero-sparkle, hero-ring, hero-ring-reverse keyframes)
+  - Updated src/components/home/HeroSection.tsx: replaced dynamic() import with direct HeroCanvas import (no more ssr:false needed)
+  - Removed packages: three, @react-three/fiber, @react-three/drei, @types/three, react-syntax-highlighter
+  - Moved z-ai-web-dev-sdk and prisma to devDependencies (kept @prisma/client as regular dep)
+  - Bundle savings: ~500KB+ removed from client bundle
+
+- Task 4.2: Lazy Loading & Code Splitting
+  - Updated src/app/[locale]/page.tsx: replaced static imports with next/dynamic for below-fold components
+  - Lazy-loaded: FeaturedProducts, NewArrivals, BestSellers, BrandMarquee, DepartmentHub, NewsletterSection
+  - Each dynamic import has proper loading fallback (skeleton or placeholder)
+  - HeroSection and CategoryGrid remain statically imported (above-fold critical path)
+
+- Task 4.3: Optimize Images & Caching
+  - Updated src/app/api/categories/route.ts: Cache-Control s-maxage=600, stale-while-revalidate=1200
+  - Updated src/app/api/deals/route.ts: Cache-Control s-maxage=60, stale-while-revalidate=120
+  - Products route already had correct: s-maxage=300, stale-while-revalidate=600
+  - Replaced all raw <img> tags with Next.js <Image> component:
+    - src/app/[locale]/wishlist/page.tsx: placeholder image → <Image fill sizes="...">
+    - src/components/products/ProductImageGallery.tsx: all 4 <img> → <Image> with proper sizes attributes
+  - Zero remaining <img> tags in src/
+
+- Verification: bun run lint = 0 errors, bun run test = 108/108 passing, dev server clean
+
+Stage Summary:
+- Three.js (~500KB+) replaced with pure CSS animations — zero JS library dependencies for hero
+- Below-fold components lazy-loaded via next/dynamic for smaller initial JS bundle
+- API cache headers tuned: products 5min, categories 10min, deals 1min
+- All product images use Next.js Image component with proper sizes attributes
+- 5 packages removed from production dependencies (three, @react-three/fiber, @react-three/drei, react-syntax-highlighter, @types/three)
+- z-ai-web-dev-sdk and prisma moved to devDependencies
+- No commits made

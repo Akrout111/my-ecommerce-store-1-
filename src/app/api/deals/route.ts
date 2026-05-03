@@ -21,7 +21,7 @@ export async function GET() {
       },
     }));
     const response = NextResponse.json({ deals: parsed });
-    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
     return response;
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

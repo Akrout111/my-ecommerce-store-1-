@@ -3,15 +3,13 @@
 import { motion } from "framer-motion";
 import { Truck, RotateCcw, Users, ChevronDown } from "lucide-react";
 import { Playfair_Display } from "next/font/google";
-import dynamic from "next/dynamic";
 import { useLanguage } from "@/components/ecommerce/language-provider";
+import { HeroCanvas } from "./HeroCanvas";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-playfair",
 });
-
-const HeroCanvas = dynamic(() => import("./HeroCanvas").then((m) => ({ default: m.HeroCanvas })), { ssr: false });
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -135,7 +133,7 @@ export function HeroSection() {
           </motion.div>
         </motion.div>
 
-        {/* Right Column — 3D Canvas */}
+        {/* Right Column — Animated Canvas */}
         <div className="relative hidden h-[500px] min-h-[500px] lg:block lg:h-auto lg:w-[45%]">
           <HeroCanvas />
           <div className="pointer-events-none absolute inset-0" />

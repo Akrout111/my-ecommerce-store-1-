@@ -2,6 +2,7 @@
 
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useWishlistStore } from '@/store/wishlist-store';
@@ -45,8 +46,14 @@ export default function WishlistPage() {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {wishlistIds.map((id) => (
           <div key={id} className="rounded-2xl border border-border bg-card p-4 text-center">
-            <div className="aspect-square bg-muted rounded-lg mb-3 overflow-hidden">
-              <img src="/images/placeholder-product.svg" alt="Wishlist item" className="h-full w-full object-contain p-6" />
+            <div className="relative aspect-square bg-muted rounded-lg mb-3 overflow-hidden">
+              <Image
+                src="/images/placeholder-product.svg"
+                alt="Wishlist item"
+                fill
+                className="object-contain p-6"
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              />
             </div>
             <p className="text-sm font-medium truncate">Product {id.slice(0, 8)}</p>
             <button

@@ -1,18 +1,39 @@
 import { prisma } from '@/lib/db';
 import { HeroSection } from '@/components/home/HeroSection';
 import { CategoryGrid } from '@/components/home/CategoryGrid';
-import { FeaturedProducts } from '@/components/home/FeaturedProducts';
 import { DealsSection } from '@/components/home/DealsSection';
-import { NewArrivals } from '@/components/home/NewArrivals';
 import { PromoBanner } from '@/components/home/PromoBanner';
-import { BestSellers } from '@/components/home/BestSellers';
-import { BrandMarquee } from '@/components/home/BrandMarquee';
-import { DepartmentHub } from '@/components/home/DepartmentHub';
-import { NewsletterSection } from '@/components/home/NewsletterSection';
 import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { ProductCardSkeleton } from '@/components/shared/ProductCardSkeleton';
 import type { Product } from '@/types/product';
 import { safeJsonParse } from '@/lib/utils/json';
+
+// Lazy-load below-fold client components to reduce initial JS bundle
+const FeaturedProducts = dynamic(
+  () => import('@/components/home/FeaturedProducts').then((m) => ({ default: m.FeaturedProducts })),
+  { loading: () => <ProductSectionSkeleton /> }
+);
+const NewArrivals = dynamic(
+  () => import('@/components/home/NewArrivals').then((m) => ({ default: m.NewArrivals })),
+  { loading: () => <ProductSectionSkeleton /> }
+);
+const BestSellers = dynamic(
+  () => import('@/components/home/BestSellers').then((m) => ({ default: m.BestSellers })),
+  { loading: () => <ProductSectionSkeleton /> }
+);
+const BrandMarquee = dynamic(
+  () => import('@/components/home/BrandMarquee').then((m) => ({ default: m.BrandMarquee })),
+  { loading: () => <div className="h-32 animate-pulse bg-muted/20" /> }
+);
+const DepartmentHub = dynamic(
+  () => import('@/components/home/DepartmentHub').then((m) => ({ default: m.DepartmentHub })),
+  { loading: () => <div className="h-64 animate-pulse bg-muted/20" /> }
+);
+const NewsletterSection = dynamic(
+  () => import('@/components/home/NewsletterSection').then((m) => ({ default: m.NewsletterSection })),
+  { loading: () => <div className="h-48 animate-pulse bg-muted/20" /> }
+);
 
 function ProductSectionSkeleton() {
   return (

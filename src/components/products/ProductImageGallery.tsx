@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import {
   Carousel,
   CarouselContent,
@@ -45,18 +46,22 @@ export function ProductImageGallery({ images, category, className }: ProductImag
         <CarouselContent>
           {displayImages.map((image, index) => (
             <CarouselItem key={index}>
-              <div className={cn("aspect-square rounded-lg bg-gradient-to-br flex items-center justify-center", gradient)}>
+              <div className={cn("relative aspect-square rounded-lg bg-gradient-to-br overflow-hidden", gradient)}>
                 {image.url ? (
-                  <img
+                  <Image
                     src={image.url}
                     alt={image.alt}
-                    className="h-full w-full rounded-lg object-cover"
+                    fill
+                    className="rounded-lg object-cover"
+                    sizes="(max-width: 768px) 100vw, 50vw"
                   />
                 ) : (
-                  <img
+                  <Image
                     src="/images/placeholder-product.svg"
                     alt="Product placeholder"
-                    className="h-full w-full rounded-lg object-contain p-8"
+                    fill
+                    className="rounded-lg object-contain p-8"
+                    sizes="(max-width: 768px) 100vw, 50vw"
                   />
                 )}
               </div>
@@ -73,7 +78,7 @@ export function ProductImageGallery({ images, category, className }: ProductImag
             key={index}
             onClick={() => setSelectedIndex(index)}
             className={cn(
-              "h-16 w-16 rounded-md bg-gradient-to-br overflow-hidden transition-all",
+              "relative h-16 w-16 rounded-md bg-gradient-to-br overflow-hidden transition-all",
               gradient,
               selectedIndex === index
                 ? "ring-2 ring-[#C9A96E] ring-offset-2"
@@ -81,14 +86,22 @@ export function ProductImageGallery({ images, category, className }: ProductImag
             )}
           >
             {image.url ? (
-              <img
+              <Image
                 src={image.url}
                 alt={image.alt}
-                className="h-full w-full object-cover"
+                fill
+                className="object-cover"
+                sizes="64px"
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center">
-                <img src="/images/placeholder-product.svg" alt="Placeholder" className="h-8 w-8 object-contain" />
+                <Image
+                  src="/images/placeholder-product.svg"
+                  alt="Placeholder"
+                  width={32}
+                  height={32}
+                  className="object-contain"
+                />
               </div>
             )}
           </button>

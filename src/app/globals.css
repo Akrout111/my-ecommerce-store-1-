@@ -406,6 +406,71 @@ html {
   }
 }
 
+/* Hero CSS animations (replaces Three.js) */
+@keyframes hero-orb {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(30px, -20px) scale(1.1);
+  }
+  50% {
+    transform: translate(-20px, 30px) scale(0.95);
+  }
+  75% {
+    transform: translate(-30px, -10px) scale(1.05);
+  }
+}
+
+.animate-hero-orb {
+  animation: hero-orb 12s ease-in-out infinite;
+}
+
+@keyframes hero-sparkle {
+  0%, 100% {
+    opacity: 0;
+    transform: translateY(0) scale(0.5);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(-10px) scale(1);
+  }
+  80% {
+    opacity: 0.8;
+    transform: translateY(-40px) scale(0.8);
+  }
+}
+
+.animate-hero-sparkle {
+  animation: hero-sparkle 8s ease-in-out infinite;
+}
+
+@keyframes hero-ring {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+.animate-hero-ring {
+  animation: hero-ring 30s linear infinite;
+}
+
+@keyframes hero-ring-reverse {
+  0% {
+    transform: translate(-30%, -40%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-30%, -40%) rotate(-360deg);
+  }
+}
+
+.animate-hero-ring-reverse {
+  animation: hero-ring-reverse 25s linear infinite;
+}
+
 /* Number flip animation */
 @keyframes flip-in {
   0% {

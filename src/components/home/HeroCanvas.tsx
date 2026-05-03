@@ -1,117 +1,120 @@
 "use client";
 
-import { Suspense, useRef } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { Float, Stars, OrbitControls } from "@react-three/drei";
 import { motion } from "framer-motion";
-import * as THREE from "three";
 
-function AnimatedTorus() {
-  const ref = useRef<THREE.Mesh>(null);
-  useFrame(() => {
-    if (ref.current) {
-      ref.current.rotation.y += 0.004;
-      ref.current.rotation.x += 0.002;
-    }
-  });
-  return (
-    <mesh ref={ref}>
-      <torusGeometry args={[1.2, 0.35, 32, 64]} />
-      <meshStandardMaterial
-        color="#C9A96E"
-        metalness={0.9}
-        roughness={0.1}
-      />
-    </mesh>
-  );
-}
+// Floating golden particles / sparkles using pure CSS animations
+// Replaces the Three.js/R3F 3D scene (~500KB+) with a zero-dependency CSS alternative
 
-function FloatingIcosahedron() {
-  return (
-    <Float speed={2} rotationIntensity={1.5} floatIntensity={2}>
-      <mesh>
-        <icosahedronGeometry args={[0.6]} />
-        <meshStandardMaterial
-          color="#E8A0BF"
-          wireframe={false}
-          metalness={0.8}
-        />
-      </mesh>
-    </Float>
-  );
-}
+const SPARKLES = Array.from({ length: 28 }, (_, i) => ({
+  id: i,
+  size: Math.random() * 4 + 2,
+  x: Math.random() * 100,
+  y: Math.random() * 100,
+  delay: Math.random() * 8,
+  duration: Math.random() * 6 + 6,
+  opacity: Math.random() * 0.5 + 0.2,
+}));
 
-function AnimatedBox() {
-  const ref = useRef<THREE.Mesh>(null);
-  useFrame(() => {
-    if (ref.current) {
-      ref.current.rotation.x += 0.008;
-      ref.current.rotation.z += 0.005;
-    }
-  });
-  return (
-    <mesh ref={ref} position={[2, -1, -1]}>
-      <boxGeometry args={[0.4, 0.4, 0.4]} />
-      <meshStandardMaterial
-        color="#FAF8F5"
-        opacity={0.6}
-        transparent
-      />
-    </mesh>
-  );
-}
-
-function Scene() {
-  return (
-    <>
-      <AnimatedTorus />
-      <FloatingIcosahedron />
-      <AnimatedBox />
-      <Stars
-        count={800}
-        radius={80}
-        depth={50}
-        factor={4}
-        saturation={0}
-        fade
-        speed={1}
-      />
-      <pointLight position={[3, 3, 3]} intensity={2} color="#C9A96E" />
-      <pointLight position={[-3, -2, 2]} intensity={1.5} color="#E8A0BF" />
-      <ambientLight intensity={0.3} />
-      <OrbitControls
-        enableZoom={false}
-        enablePan={false}
-        autoRotate
-        autoRotateSpeed={0.5}
-        maxPolarAngle={Math.PI / 2}
-      />
-    </>
-  );
-}
+const ORBS = Array.from({ length: 5 }, (_, i) => ({
+  id: i,
+  size: Math.random() * 200 + 100,
+  x: Math.random() * 80 + 10,
+  y: Math.random() * 80 + 10,
+  delay: Math.random() * 10,
+  duration: Math.random() * 8 + 10,
+  color: i % 2 === 0 ? "rgba(201,169,110,0.06)" : "rgba(232,160,191,0.04)",
+}));
 
 export function HeroCanvas() {
   return (
     <motion.div
-      className="pointer-events-none absolute inset-0 h-full w-full"
+      className="pointer-events-none absolute inset-0 h-full w-full overflow-hidden"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 1.5 }}
     >
-      <Suspense
-        fallback={
-          <div className="h-full w-full animate-pulse bg-gradient-to-br from-background to-muted/20" />
-        }
+      {/* Base gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0F0F0F] via-[#0F0F0F] to-[#1A1A1A]" />
+
+      {/* Animated gradient orbs */}
+      {ORBS.map((orb) => (
+        <div
+          key={`orb-${orb.id}`}
+          className="absolute rounded-full animate-hero-orb"
+          style={{
+            width: orb.size,
+            height: orb.size,
+            left: `${orb.x}%`,
+            top: `${orb.y}%`,
+            background: `radial-gradient(circle, ${orb.color} 0%, transparent 70%)`,
+            animationDelay: `${orb.delay}s`,
+            animationDuration: `${orb.duration}s`,
+          }}
+        />
+      ))}
+
+      {/* Radial gold glow - top right */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(201,169,110,0.12)_0%,transparent_50%)]" />
+
+      {/* Radial rose glow - bottom left */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(232,160,191,0.08)_0%,transparent_50%)]" />
+
+      {/* Rotating golden ring */}
+      <div
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 animate-hero-ring"
+        style={{
+          width: "min(60vw, 400px)",
+          height: "min(60vw, 400px)",
+          borderRadius: "50%",
+          border: "1.5px solid rgba(201,169,110,0.15)",
+          boxShadow: "0 0 60px rgba(201,169,110,0.05), inset 0 0 60px rgba(201,169,110,0.03)",
+        }}
+      />
+
+      {/* Second ring - offset and smaller */}
+      <div
+        className="absolute left-1/2 top-1/2 -translate-x-[30%] -translate-y-[40%] animate-hero-ring-reverse"
+        style={{
+          width: "min(45vw, 280px)",
+          height: "min(45vw, 280px)",
+          borderRadius: "50%",
+          border: "1px solid rgba(232,160,191,0.1)",
+          boxShadow: "0 0 40px rgba(232,160,191,0.04)",
+        }}
+      />
+
+      {/* Floating sparkles */}
+      {SPARKLES.map((sparkle) => (
+        <div
+          key={`sparkle-${sparkle.id}`}
+          className="absolute rounded-full animate-hero-sparkle"
+          style={{
+            width: sparkle.size,
+            height: sparkle.size,
+            left: `${sparkle.x}%`,
+            top: `${sparkle.y}%`,
+            background: sparkle.id % 3 === 0
+              ? "rgba(232,160,191,0.8)"
+              : "rgba(201,169,110,0.9)",
+            boxShadow: sparkle.id % 3 === 0
+              ? "0 0 6px rgba(232,160,191,0.4)"
+              : "0 0 8px rgba(201,169,110,0.5)",
+            animationDelay: `${sparkle.delay}s`,
+            animationDuration: `${sparkle.duration}s`,
+            opacity: sparkle.opacity,
+          }}
+        />
+      ))}
+
+      {/* Geometric accent lines */}
+      <svg
+        className="absolute inset-0 h-full w-full opacity-[0.04]"
+        xmlns="http://www.w3.org/2000/svg"
       >
-        <Canvas
-          className="absolute inset-0 h-full w-full"
-          camera={{ position: [0, 0, 5], fov: 60 }}
-          gl={{ antialias: true, alpha: true }}
-          style={{ background: "transparent" }}
-        >
-          <Scene />
-        </Canvas>
-      </Suspense>
+        <line x1="0" y1="0" x2="100%" y2="100%" stroke="#C9A96E" strokeWidth="0.5" />
+        <line x1="100%" y1="0" x2="0" y2="100%" stroke="#C9A96E" strokeWidth="0.5" />
+        <circle cx="50%" cy="50%" r="30%" fill="none" stroke="#C9A96E" strokeWidth="0.5" />
+      </svg>
     </motion.div>
   );
 }
