@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { ProductCreateInput } from '@/lib/validations/product';
+import { z } from 'zod';
 
 function safeJsonParse(str: string, fallback: unknown) {
   try { return JSON.parse(str); } catch { return fallback; }
@@ -34,9 +36,49 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     const body = await request.json();
-    const product = await prisma.product.create({ data: body });
+
+    const result = ProductCreateInput.safeParse(body);
+    if (!result.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: result.error.issues },
+        { status: 400 },
+      );
+    }
+
+    const data = result.data;
+
+    const prismaData = {
+      name: data.name,
+      nameAr: data.nameAr ?? null,
+      description: data.description,
+      descriptionAr: data.descriptionAr ?? null,
+      price: data.price,
+      salePrice: data.salePrice ?? null,
+      brand: data.brand,
+      images: JSON.stringify(data.images),
+      category: data.category,
+      subcategory: data.subcategory ?? null,
+      sizes: JSON.stringify(data.sizes),
+      colors: JSON.stringify(data.colors),
+      tags: data.tags.length > 0 ? JSON.stringify(data.tags) : null,
+      rating: data.rating ?? 0,
+      reviewCount: data.reviewCount ?? 0,
+      inStock: data.inStock ?? data.stock > 0,
+      stockCount: data.stockCount ?? data.stock,
+      isFeatured: data.featured,
+      isNew: data.isNew,
+      isBestSeller: data.isBestSeller ?? false,
+    };
+
+    const product = await prisma.product.create({ data: prismaData });
     return NextResponse.json({ product }, { status: 201 });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: error.issues },
+        { status: 400 },
+      );
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

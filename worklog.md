@@ -143,3 +143,94 @@ Stage Summary:
 - All integration tasks complete
 - Dev server running without errors
 - Pre-existing lint issues in LoginForm.tsx and SearchFilters.tsx (not from our changes)
+
+---
+Task ID: 1.3
+Agent: Rate Limit Agent
+Task: Add Rate Limiting to Auth Endpoints
+
+Work Log:
+- Created /src/lib/rate-limit.ts with reusable rate-limiting utility
+  - `rateLimit(config)` factory returns a `RateLimiterFn` that accepts Request/NextRequest/string
+  - In-memory Map-based store keyed by IP address
+  - `getClientIp()` helper extracts IP from X-Forwarded-For header (reverse proxy aware), falls back to 'unknown'
+  - Auto-cleanup of expired entries every 10 minutes (with unref() to avoid keeping process alive)
+  - `rateLimitMiddleware()` helper for wrapping Next.js API route handlers
+  - Pre-configured `loginRateLimiter` (5 req / 15 min) and `registerRateLimiter` (3 req / 60 min)
+  - `RateLimiterFn` interface exposes `.check(key)` and `.config` for flexibility
+- Updated /src/lib/auth.ts to apply rate limiting in credentials authorize()
+  - Imports `loginRateLimiter` and `getClientIp` from rate-limit
+  - Extracts IP from the NextAuth `req` parameter headers
+  - Checks rate limit before any DB queries (fail fast on rate-limited IPs)
+  - On rate limit exceeded, throws descriptive Error with retry time (NextAuth handles as sign-in failure)
+- Updated /src/app/api/auth/register/route.ts with rate limiting and headers
+  - Imports `registerRateLimiter` from rate-limit
+  - Returns 429 with `{ error: 'Too many requests', retryAfter }` when rate limited
+  - Includes X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset headers on ALL responses (429, 409, 400, 500, 201)
+  - Also includes Retry-After header on 429 responses
+- All modified files pass ESLint with zero errors
+- Dev server running clean
+
+Stage Summary:
+- Reusable rate-limiting utility created with in-memory store, IP detection, auto-cleanup, and middleware helper
+- Login endpoint: 5 attempts per 15 minutes per IP (throws error in NextAuth authorize)
+- Registration endpoint: 3 registrations per hour per IP (returns 429 with rate limit headers)
+- Rate limit headers included on all register endpoint responses
+
+---
+Task ID: 1.2
+Agent: Security Agent
+Task: Remove Committed Secrets & Secure Environment
+
+Work Log:
+- Scanned entire codebase for all environment variable references (process.env.*, NEXT_PUBLIC_*)
+- Found 13 env vars: DATABASE_URL, NEXTAUTH_SECRET, NEXT_PUBLIC_APP_URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, LLM_API_URL, LLM_API_KEY, LLM_MODEL
+- Created /home/z/my-project/.env.example with all 13 env vars documented with placeholder values and usage comments
+- Updated /home/z/my-project/.gitignore with explicit patterns: .env, .env.*, !.env.example, *.db, db/*.db, upload/, skills/, agent-ctx/
+- Removed .env from git tracking (git rm --cached .env) — file remains on disk
+- Removed db/custom.db, db/dev.db from git tracking — files remain on disk
+- Removed skills/ directory (~300 files) from git tracking
+- Removed upload/ directory (5 files) from git tracking
+- Removed agent-ctx/ directory (3 files) from git tracking
+- Committed with message: "chore: remove committed secrets and artifacts from tracking"
+- Verified: git ls-files | grep -E '\.env|\.db' returns only .env.example (correct)
+- Verified: .env and db/dev.db still exist on disk (not deleted)
+
+Stage Summary:
+- All secrets and sensitive artifacts removed from git tracking
+- .env.example provides full documentation for onboarding
+- .gitignore properly prevents future accidental commits of .env, .db, skills/, upload/, agent-ctx/
+- 429 files removed from tracking in one commit
+- No data loss: all files still exist on disk
+
+---
+Task ID: 1.4
+Agent: Validation Agent
+Task: Add Input Validation to Admin Endpoints
+
+Work Log:
+- Created /src/lib/validations/product.ts with three Zod schemas:
+  - ProductCreateInput: validates name (1-200), description (1-5000), price (>0), compareAtPrice (opt), category, images (1-10 URLs), sizes, colors, tags, stock (int >=0), featured (bool), isNew (bool), brand (min 1), nameAr (opt), descriptionAr (opt), subcategory (opt), isBestSeller (opt), salePrice (opt), rating (opt), reviewCount (opt int), inStock (opt), stockCount (opt int)
+  - ProductUpdateInput: ProductCreateInput.partial() — all fields optional
+  - OrderStatusUpdateInput: status enum (pending, paid, shipped, delivered, cancelled)
+- Updated /api/admin/products/route.ts POST handler:
+  - Validates body against ProductCreateInput via safeParse
+  - Returns 400 with { error: 'Validation failed', details: zodError.issues } on invalid input
+  - Converts validated data for Prisma: JSON.stringify for arrays (images, sizes, colors, tags), maps stock→stockCount, featured→isFeatured, sets defaults (rating=0, reviewCount=0, inStock=stock>0, isBestSeller=false)
+  - Preserves admin role check via getServerSession(authOptions)
+- Updated /api/admin/products/[id]/route.ts PUT handler:
+  - Validates body against ProductUpdateInput via safeParse
+  - Conditionally builds prismaData object, JSON.stringify for array fields
+  - Maps stock→stockCount, featured→isFeatured when present
+- Updated /api/admin/orders/[id]/route.ts PATCH handler:
+  - Validates body against OrderStatusUpdateInput via safeParse
+  - Only passes validated status field to Prisma update
+- All routes include ZodError catch fallback for defense-in-depth
+- Lint passes with 0 new errors (pre-existing issues in LoginForm.tsx, SearchFilters.tsx, AccountDashboard.tsx unchanged)
+- Dev server running clean on port 3000
+
+Stage Summary:
+- All three admin endpoints now have Zod input validation before Prisma operations
+- Invalid inputs return 400 with structured error details
+- Arrays are properly JSON.stringify'd for SQLite storage
+- Field mapping handles validation schema → Prisma schema naming (stock→stockCount, featured→isFeatured)

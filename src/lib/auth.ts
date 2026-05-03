@@ -4,6 +4,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
+import { loginRateLimiter, getClientIp } from "@/lib/rate-limit";
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
@@ -26,8 +27,25 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) return null;
+
+        // Rate limiting: 5 attempts per 15 minutes per IP
+        const headers =
+          req && 'headers' in req
+            ? (req.headers as Headers)
+            : new Headers();
+        const clientIp = getClientIp(headers);
+        const rateLimitResult = loginRateLimiter(clientIp);
+
+        if (!rateLimitResult.success) {
+          const retryMinutes = Math.ceil(
+            (rateLimitResult.resetTime - Date.now()) / 60_000
+          );
+          throw new Error(
+            `Too many login attempts. Please try again in ${retryMinutes} minute${retryMinutes !== 1 ? 's' : ''}.`
+          );
+        }
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
