@@ -311,3 +311,106 @@ Stage Summary:
 - Build passes cleanly
 - No files in src/components/ui/ were modified beyond adding eslint-disable comments
 - No commits made
+
+---
+Task ID: 3.3
+Agent: Checkout Test Agent
+Task: Write tests for checkout flow and cart store (Phase 3, Task 3.3)
+
+Work Log:
+- Read worklog.md to understand project context and prior work
+- Read cart store implementation (src/store/cart-store.ts): Zustand store with persist middleware, addItem/removeItem/updateQuantity/clearCart/applyCoupon/removeCoupon actions, calculateTotals helper with PERSONA10/SAVE15/WELCOME20/FIRSTORDER coupons, free shipping > $50, 8% tax
+- Read checkout API route (src/app/api/checkout/create-payment-intent/route.ts): Server-side price verification via prisma.product.findMany, coupon/shipping/tax calculation, Stripe PaymentIntent creation, order creation in DB
+- Read supporting files: cart types, product types, Prisma schema, auth config, vitest config, existing test setup
+- Created src/__tests__/store/cart-store.test.ts (36 tests):
+  - addItem: correctly adds items, multiple items, same item same size/color increments quantity, different size/color as separate items
+  - removeItem: correctly removes items, only removes specified item, recalculates totals after removal
+  - updateQuantity: correctly updates quantities, recalculates totals, removes on quantity 0 or negative
+  - Totals computation: subtotal, free shipping > $50, paid shipping < $50, 8% tax, total calculation
+  - Coupon codes: PERSONA10 (10%), SAVE15 (15%), WELCOME20 (20%), FIRSTORDER (20%), invalid codes, case-insensitive, removal, reapplication after adding items
+  - clearCart: clears all state including coupon
+  - toggleCart/openCart/closeCart: UI state management
+  - Edge cases: exact $50 threshold (no free shipping), just over $50 (free shipping), removing nonexistent item, updating quantity of nonexistent item
+- Created src/__tests__/api/checkout.test.ts (18 tests):
+  - Server-side price verification: uses DB prices not client-submitted prices, rejects tampered prices, returns 500 for missing products
+  - Client secret on success: returns client_secret, creates Stripe PaymentIntent with correct amount in cents, creates order in DB with correct data
+  - Coupon codes: PERSONA10 (10%), SAVE15 (15%), WELCOME20 (20%), invalid code (no discount), case-insensitive
+  - Shipping costs: standard ($5.99 under $50), express ($12.99), nextday ($24.99), free for orders > $50, defaults to standard
+  - Sale price handling: uses salePrice when available
+- Both test files pass: 54 tests total (36 + 18)
+- Pre-existing test failures in auth.test.ts (8) and register.test.ts (mock hoisting issue) are NOT from this task
+
+Stage Summary:
+- 54 new tests across 2 test files, all passing
+- Cart store fully tested: item management, totals, coupons, edge cases
+- Checkout API fully tested: price verification, coupon codes, shipping costs, sale prices
+- No changes to production code
+- No commits made
+
+---
+Task ID: 3.2
+Agent: Auth Test Agent
+Task: Write comprehensive authentication tests (Phase 3, Task 3.2)
+
+Work Log:
+- Read worklog.md to understand project context and prior work
+- Read existing test infrastructure: vitest.config.ts, setup.ts, infrastructure.test.ts
+- Read source implementations: auth.ts (NextAuth credentials provider with rate limiting, account lockout, bcrypt), register/route.ts (Zod validation, duplicate email check, bcrypt hashing, rate limiting), rate-limit.ts (in-memory Map store, IP extraction, factory pattern)
+- Key challenge discovered: NextAuth v4's real `CredentialsProvider` wraps the `authorize` function in a way that bypasses vitest's module mocks. When the real `next-auth/providers/credentials` module is used, the `authorize` function captures references to the original (unmocked) modules instead of the mocked versions.
+- Solution: Mock `next-auth/providers/credentials` to return the config object directly (`default: (config) => ({ ...config, type: 'credentials' })`), which preserves our authorize function's references to the mocked prisma, bcrypt, and rate-limit modules.
+- Also had to use `vi.hoisted()` for mock function definitions (required by vitest v4 so that `vi.fn()` references are available inside hoisted `vi.mock()` factories)
+
+Created 3 test files (47 tests total):
+
+1. src/__tests__/api/auth.test.ts (14 tests):
+   - Valid credentials should succeed (mocks prisma.user.findUnique + bcrypt.compare)
+   - Invalid password should fail (bcrypt.compare returns false, loginAttempts increments)
+   - Non-existent email should fail (prisma returns null, no timing attack info leak)
+   - Missing email/password should return null
+   - Account lockout after 5 failed attempts (loginAttempts=5, lockedUntil set to ~15 min future)
+   - Increment loginAttempts on each failed attempt before lockout
+   - Deny login when account is locked (lockedUntil in future, skip bcrypt.compare)
+   - Successful login resets loginAttempts and lockedUntil
+   - Reset on expired lock + successful login (two prisma.user.update calls)
+   - No update when loginAttempts=0 and no lockout on success
+   - Rate limit exceeded throws "Too many login attempts" error
+   - Extracts client IP from request headers
+   - OAuth-only users (no password) return null
+
+2. src/__tests__/api/register.test.ts (14 tests):
+   - Valid data creates user with bcrypt-hashed password (verifies bcrypt.hash called with salt=12)
+   - Rate limit headers on 201 response
+   - Duplicate email returns 409 with "Email already in use"
+   - Rate limit headers on 409 response
+   - Short password (< 8 chars) returns 400 with Zod validation errors
+   - Invalid email returns 400 with Zod validation errors
+   - Short name (< 2 chars) returns 400 with Zod validation errors
+   - Multiple invalid fields returns 400 with ≥2 validation errors
+   - Rate limit headers on 400 response
+   - Rate limit exceeded returns 429 with "Too many requests" and retryAfter
+   - Retry-After header on 429 response
+   - Rate limit headers on 429 response
+   - Unexpected errors return 500 with "Internal server error"
+   - Rate limit headers on 500 response
+
+3. src/__tests__/lib/rate-limit.test.ts (19 tests):
+   - Requests within limit: first request allowed, max requests allowed, remaining count tracked
+   - Requests exceeding limit: blocked after max reached, continues blocking subsequent
+   - Window reset: counter resets after window expiry, new resetTime set, no reset during active window
+   - Separate counters per IP: different IPs tracked independently, one rate-limited IP doesn't affect another
+   - getClientIp: extracts from X-Forwarded-For (first IP), handles single IP, returns "unknown" without header, trims whitespace
+   - Request object support: accepts Request objects, NextRequest-like objects
+   - .check() method: works with raw key strings, tracks counts independently
+   - .config property: exposes windowMs and maxRequests
+
+- All 108 tests pass (47 new + 61 pre-existing)
+- ESLint passes with zero errors
+- No commits made
+
+Stage Summary:
+- 47 new authentication tests across 3 test files, all passing
+- Auth (authorize): credentials validation, account lockout, rate limiting, password reset
+- Registration: Zod validation, duplicate email, bcrypt hashing, rate limiting, error handling with headers
+- Rate limiting: in-memory store, IP separation, window expiry, getClientIp
+- Key finding: NextAuth v4 CredentialsProvider must be mocked for unit tests to work with vitest module mocking
+- No changes to production code
