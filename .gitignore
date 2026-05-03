@@ -30,12 +30,36 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# =============================================================================
+# Environment & Secrets — NEVER commit real env files
+# =============================================================================
+.env
+.env.*
+!.env.example
+
+# =============================================================================
+# Database files — never commit binary DB files
+# =============================================================================
+*.db
+db/*.db
+
+# =============================================================================
+# Uploaded files — user-generated / runtime content
+# =============================================================================
+upload/
+
+# =============================================================================
+# Skills directory — third-party skill packages (not part of the app)
+# =============================================================================
+skills/
+
+# =============================================================================
+# Agent context — temporary work records
+# =============================================================================
+agent-ctx/
 
 # vercel
 .vercel
-
 
 # typescript
 *.tsbuildinfo
@@ -50,6 +74,3 @@ test
 prompt
 
 server.log
-# Skills directory
-/skills/.env
-.env.local
