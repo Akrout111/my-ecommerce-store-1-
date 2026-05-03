@@ -360,7 +360,7 @@ export function ProductCard({
               {hasSecondImage && (
                 <Image
                   src={product.images[1]}
-                  alt={`${product.name} alt`}
+                  alt={`${product.name} - alternate view`}
                   fill
                   className="absolute inset-0 object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100"
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"

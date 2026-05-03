@@ -58,7 +58,7 @@ export function ProductImageGallery({ images, category, className }: ProductImag
                 ) : (
                   <Image
                     src="/images/placeholder-product.svg"
-                    alt="Product placeholder"
+                    alt="Product placeholder image"
                     fill
                     className="rounded-lg object-contain p-8"
                     sizes="(max-width: 768px) 100vw, 50vw"
@@ -97,7 +97,7 @@ export function ProductImageGallery({ images, category, className }: ProductImag
               <div className="flex h-full w-full items-center justify-center">
                 <Image
                   src="/images/placeholder-product.svg"
-                  alt="Placeholder"
+                  alt="Product thumbnail placeholder"
                   width={32}
                   height={32}
                   className="object-contain"

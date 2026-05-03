@@ -575,3 +575,74 @@ Stage Summary:
 - All 7 API routes use standardized response helpers with correlation IDs for request tracing
 - Health check endpoints: /api/health (app status) and /api/health/db (database connectivity)
 - No commits made
+
+---
+Task ID: 7-combined
+Agent: Documentation & Accessibility Agent
+Task: Phase 7 — Documentation, i18n Consolidation & Accessibility (Tasks 7.1, 7.2, 7.3)
+
+Work Log:
+
+- Task 7.1: Comprehensive README.md & CONTRIBUTING.md
+  - Created /home/z/my-project/README.md with 12 sections:
+    - Project Overview — Persona Fashion tagline & description
+    - Tech Stack — Table with 14 technologies and versions
+    - Prerequisites — Node.js 20+, Bun, SQLite
+    - Quick Start — Clone, install, env, db:push, db:generate, dev
+    - Environment Variables — Table of all 13 env vars from .env.example with descriptions
+    - Project Structure — Full directory tree with descriptions for every major folder
+    - Available Scripts — Table of all 16 scripts from package.json
+    - API Overview — Tables for Auth, Products, Admin, Checkout, and Health endpoints
+    - Testing — How to run tests with Vitest
+    - Internationalization — How next-intl + LanguageProvider + Zustand store work together
+    - Deployment — Docker and manual deployment instructions, CI/CD overview
+    - License — MIT
+  - Created /home/z/my-project/CONTRIBUTING.md with:
+    - Branch naming convention (feature/, fix/, refactor/)
+    - Conventional commits format with type table
+    - PR process (9 steps)
+    - Code style guidelines
+    - Development setup instructions
+
+- Task 7.2: Consolidate i18n & Move Coupon Codes Server-Side
+  - Reviewed dual i18n setup: next-intl (server routing) + LanguageProvider (client translations)
+  - Determined LanguageProvider is NOT redundant with next-intl — they serve complementary roles:
+    - next-intl: middleware-based URL routing (/en, /ar), locale detection
+    - LanguageProvider: t(), formatCurrency(), formatDate(), isRTL, dir for 30+ client components
+    - Zustand language-store: persists user preference to localStorage
+  - Kept LanguageProvider intact — removing it would break 30+ components with no benefit
+  - Created /src/lib/coupon-service.ts:
+    - Coupon interface with code, discountType, discountValue, minPurchase, active
+    - COUPONS array: PERSONA10 (10%), SAVE15 (15%), WELCOME20 (20%), FIRSTORDER (20%)
+    - validateCoupon(code, cartTotal) returns { valid, discount, message, coupon? }
+    - Supports both percentage and fixed discount types
+    - Handles inactive coupons and minimum purchase requirements
+    - getActiveCouponCodes() utility for hinting available coupons
+  - Created /src/app/api/coupons/validate/route.ts:
+    - POST endpoint accepting { code, cartTotal }
+    - Input validation: code (string, required), cartTotal (number, >= 0)
+    - Returns validation result from coupon-service
+    - Returns 400 for invalid input, 500 for server errors
+
+- Task 7.3: Accessibility Improvements
+  - Added aria-live="polite" + aria-atomic="true" to cart count badge in CartCount.tsx
+  - Added aria-live="polite" to search results count in SearchPageClient.tsx
+  - Added skip-to-content link in layout.tsx:
+    - `<a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:rounded focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground">Skip to main content</a>`
+    - Placed before the flex container, links to existing `<main id="main">`
+  - Improved alt text across 5 files:
+    - ProductCard.tsx: "alt" → "- alternate view" for second product image
+    - ProductImageGallery.tsx: "Product placeholder" → "Product placeholder image", "Placeholder" → "Product thumbnail placeholder"
+    - AdminProductsClient.tsx: "No image" → "No product image available"
+    - ImageUpload.tsx: "Product N" → "Product image N"
+    - wishlist/page.tsx: "Wishlist item" → "Wishlist item: Product {id}" (contextual)
+
+- Verification: bun run lint = 0 errors, bun run test = 108/108 passing, dev server clean
+
+Stage Summary:
+- Professional README.md with 12 sections covering all project aspects
+- CONTRIBUTING.md with branch naming, conventional commits, and PR process
+- Server-side coupon service with validateCoupon() and POST /api/coupons/validate endpoint
+- i18n consolidation documented — LanguageProvider kept (complementary to next-intl, not redundant)
+- Accessibility: aria-live on cart count + search results, skip-to-content link, improved alt text
+- No commits made

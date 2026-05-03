@@ -77,7 +77,7 @@ export function SearchPageClient({ query, initialProducts, total, currentPage, t
               'All Products'
             )}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">{total} products found</p>
+          <p className="mt-1 text-sm text-muted-foreground" aria-live="polite">{total} products found</p>
         </div>
 
         <div className="flex gap-8">

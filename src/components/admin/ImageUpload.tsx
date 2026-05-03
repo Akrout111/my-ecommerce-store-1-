@@ -65,7 +65,7 @@ export function ImageUpload({ images, onChange, maxImages = 6 }: ImageUploadProp
         <div className="grid grid-cols-3 gap-3">
           {images.map((url, i) => (
             <div key={i} className="relative aspect-[3/4] rounded-lg overflow-hidden border group">
-              <Image src={url} alt={`Product ${i + 1}`} fill className="object-cover" />
+              <Image src={url} alt={`Product image ${i + 1}`} fill className="object-cover" />
               <button
                 type="button"
                 onClick={() => removeImage(i)}

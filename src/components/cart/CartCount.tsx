@@ -16,6 +16,8 @@ export function CartCount() {
       <ShoppingBag className="h-5 w-5" style={{ color: COLORS.gold }} />
       {itemCount > 0 && (
         <span
+          aria-live="polite"
+          aria-atomic="true"
           className="absolute -top-0.5 -end-0.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white"
           style={{ backgroundColor: COLORS.gold }}
         >

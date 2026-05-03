@@ -49,7 +49,7 @@ export default function WishlistPage() {
             <div className="relative aspect-square bg-muted rounded-lg mb-3 overflow-hidden">
               <Image
                 src="/images/placeholder-product.svg"
-                alt="Wishlist item"
+                alt={`Wishlist item: Product ${id.slice(0, 8)}`}
                 fill
                 className="object-contain p-6"
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
