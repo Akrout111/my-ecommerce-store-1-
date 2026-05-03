@@ -47,7 +47,12 @@ export async function GET(request: NextRequest) {
       tags: safeJsonParse(p.tags ?? '[]', []),
     }));
 
-    return NextResponse.json({ products: parsed, total, page, limit, totalPages: Math.ceil(total / limit) });
+    const response = NextResponse.json({ products: parsed, total, page, limit, totalPages: Math.ceil(total / limit) });
+
+    // Cache for 5 minutes
+    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+
+    return response;
   } catch (error) {
     console.error('[API/products]', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

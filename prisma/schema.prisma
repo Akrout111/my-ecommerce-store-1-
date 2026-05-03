@@ -32,8 +32,9 @@ model Product {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  deals     Deal[]
-  cartItems CartItem[]
+  deals         Deal[]
+  cartItems     CartItem[]
+  wishlistItems WishlistItem[] @relation("WishlistProducts")
 }
 
 model Category {
@@ -122,6 +123,7 @@ model WishlistItem {
   id        String   @id @default(cuid())
   userId    String
   productId String
+  product   Product  @relation("WishlistProducts", fields: [productId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@unique([userId, productId])

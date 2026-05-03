@@ -3,20 +3,38 @@ import { HeroSection } from '@/components/home/HeroSection';
 import { CategoryGrid } from '@/components/home/CategoryGrid';
 import { FeaturedProducts } from '@/components/home/FeaturedProducts';
 import { DealsSection } from '@/components/home/DealsSection';
-import { BrandMarquee } from '@/components/home/BrandMarquee';
 import { NewArrivals } from '@/components/home/NewArrivals';
 import { PromoBanner } from '@/components/home/PromoBanner';
 import { BestSellers } from '@/components/home/BestSellers';
-import { DepartmentHub } from '@/components/home/DepartmentHub';
-import { NewsletterSection } from '@/components/home/NewsletterSection';
+import dynamic from 'next/dynamic';
+import { Suspense } from 'react';
+import { ProductCardSkeleton } from '@/components/shared/ProductCardSkeleton';
+
+// Dynamic imports for below-fold heavy components
+const BrandMarquee = dynamic(() => import('@/components/home/BrandMarquee').then(m => ({ default: m.BrandMarquee })), { ssr: false });
+const DepartmentHub = dynamic(() => import('@/components/home/DepartmentHub').then(m => ({ default: m.DepartmentHub })), { ssr: true });
+const NewsletterSection = dynamic(() => import('@/components/home/NewsletterSection').then(m => ({ default: m.NewsletterSection })), { ssr: true });
 
 function safeJsonParse(str: string, fallback: any) {
   try { return JSON.parse(str); } catch { return fallback; }
 }
 
+function ProductSectionSkeleton() {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      {Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)}
+    </div>
+  );
+}
+
+// Enable Partial Prerendering via next.config.ts cacheComponents
+
 export default async function HomePage() {
-  const [allProducts, deals] = await Promise.all([
-    prisma.product.findMany({ take: 50, orderBy: { createdAt: 'desc' } }),
+  // Optimized: Use parallel queries with targeted where clauses
+  const [featured, newArrivals, bestSellers, deals] = await Promise.all([
+    prisma.product.findMany({ where: { isFeatured: true }, take: 8 }),
+    prisma.product.findMany({ where: { isNew: true }, take: 8 }),
+    prisma.product.findMany({ where: { isBestSeller: true }, take: 8 }),
     prisma.deal.findMany({ where: { isActive: true }, include: { product: true }, take: 6 }),
   ]);
 
@@ -28,23 +46,27 @@ export default async function HomePage() {
     tags: safeJsonParse(p.tags ?? '[]', []),
   });
 
-  const products = allProducts.map(parseProduct);
+  const featuredProducts = featured.map(parseProduct);
+  const newArrivalProducts = newArrivals.map(parseProduct);
+  const bestSellerProducts = bestSellers.map(parseProduct);
   const parsedDeals = deals.map((d) => ({ ...d, product: parseProduct(d.product) }));
-
-  const featuredProducts = products.filter((p) => p.isFeatured);
-  const newArrivalProducts = products.filter((p) => p.isNew);
-  const bestSellerProducts = products.filter((p) => p.isBestSeller);
 
   return (
     <>
       <HeroSection />
       <CategoryGrid />
-      <FeaturedProducts products={featuredProducts} />
+      <Suspense fallback={<ProductSectionSkeleton />}>
+        <FeaturedProducts products={featuredProducts} />
+      </Suspense>
       <DealsSection deals={parsedDeals} />
       <BrandMarquee />
-      <NewArrivals products={newArrivalProducts} />
+      <Suspense fallback={<ProductSectionSkeleton />}>
+        <NewArrivals products={newArrivalProducts} />
+      </Suspense>
       <PromoBanner />
-      <BestSellers products={bestSellerProducts} />
+      <Suspense fallback={<ProductSectionSkeleton />}>
+        <BestSellers products={bestSellerProducts} />
+      </Suspense>
       <DepartmentHub />
       <NewsletterSection />
     </>

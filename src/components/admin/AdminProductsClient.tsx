@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Search, Pencil, Trash2, X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
+import { ImageUpload } from './ImageUpload';
 
 interface Product {
   id: string;
@@ -32,12 +33,13 @@ export function AdminProductsClient() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [saving, setSaving] = useState(false);
+  const [productImages, setProductImages] = useState<string[]>([]);
 
   const [form, setForm] = useState({
     name: '', nameAr: '', description: '', descriptionAr: '', category: 'women',
     brand: '', price: '', salePrice: '', stockCount: '100',
     isFeatured: false, isNew: false, isBestSeller: false,
-    sizes: '', colors: '', images: '',
+    sizes: '', colors: '',
   });
 
   useEffect(() => { fetchProducts(); }, []);
@@ -58,7 +60,8 @@ export function AdminProductsClient() {
 
   const openCreate = () => {
     setEditingProduct(null);
-    setForm({ name: '', nameAr: '', description: '', descriptionAr: '', category: 'women', brand: '', price: '', salePrice: '', stockCount: '100', isFeatured: false, isNew: false, isBestSeller: false, sizes: '', colors: '', images: '' });
+    setForm({ name: '', nameAr: '', description: '', descriptionAr: '', category: 'women', brand: '', price: '', salePrice: '', stockCount: '100', isFeatured: false, isNew: false, isBestSeller: false, sizes: '', colors: '' });
+    setProductImages([]);
     setSheetOpen(true);
   };
 
@@ -69,8 +72,9 @@ export function AdminProductsClient() {
       category: product.category, brand: product.brand, price: String(product.price),
       salePrice: product.salePrice ? String(product.salePrice) : '', stockCount: String(product.stockCount),
       isFeatured: product.isFeatured, isNew: product.isNew, isBestSeller: product.isBestSeller,
-      sizes: '', colors: '', images: product.images?.[0] || '',
+      sizes: '', colors: '',
     });
+    setProductImages(product.images || []);
     setSheetOpen(true);
   };
 
@@ -86,7 +90,7 @@ export function AdminProductsClient() {
         isFeatured: form.isFeatured, isNew: form.isNew, isBestSeller: form.isBestSeller,
         sizes: JSON.stringify(form.sizes.split(',').map(s => s.trim()).filter(Boolean)),
         colors: JSON.stringify(form.colors.split(',').map(s => s.trim()).filter(Boolean)),
-        images: JSON.stringify(form.images ? form.images.split(',').map(s => s.trim()).filter(Boolean) : []),
+        images: JSON.stringify(productImages),
       };
 
       const url = editingProduct ? `/api/admin/products/${editingProduct.id}` : '/api/admin/products';
@@ -227,7 +231,10 @@ export function AdminProductsClient() {
                 </div>
                 <div><label className="mb-1 block text-sm font-medium">Sizes (comma-separated)</label><input value={form.sizes} onChange={(e) => setForm({ ...form, sizes: e.target.value })} placeholder="XS, S, M, L, XL" className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A96E]" /></div>
                 <div><label className="mb-1 block text-sm font-medium">Colors (comma-separated)</label><input value={form.colors} onChange={(e) => setForm({ ...form, colors: e.target.value })} placeholder="Black, Navy, Beige" className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A96E]" /></div>
-                <div><label className="mb-1 block text-sm font-medium">Image URLs (comma-separated)</label><input value={form.images} onChange={(e) => setForm({ ...form, images: e.target.value })} placeholder="https://..." className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#C9A96E]" /></div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium">Product Images</label>
+                  <ImageUpload images={productImages} onChange={setProductImages} maxImages={6} />
+                </div>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2"><input type="checkbox" checked={form.isFeatured} onChange={(e) => setForm({ ...form, isFeatured: e.target.checked })} className="rounded text-[#C9A96E]" />Featured</label>
                   <label className="flex items-center gap-2"><input type="checkbox" checked={form.isNew} onChange={(e) => setForm({ ...form, isNew: e.target.checked })} className="rounded text-[#C9A96E]" />New</label>

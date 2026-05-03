@@ -341,6 +341,7 @@ export function ProductCard({
     <>
       <Link
         href={`/products/${product.id}`}
+        prefetch={true}
         className="group relative block overflow-hidden rounded-2xl border border-border bg-card transition-shadow duration-300 hover:shadow-2xl"
       >
         {/* Image Section */}

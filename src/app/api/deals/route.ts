@@ -19,7 +19,9 @@ export async function GET() {
         tags: safeJsonParse(d.product.tags ?? '[]', []),
       },
     }));
-    return NextResponse.json({ deals: parsed });
+    const response = NextResponse.json({ deals: parsed });
+    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+    return response;
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
