@@ -101,7 +101,7 @@ describe('POST /api/auth/register', () => {
 
     expect(response.status).toBe(201);
     expect(data.success).toBe(true);
-    expect(data.user.email).toBe('newuser@example.com');
+    expect(data.data.user.email).toBe('newuser@example.com');
 
     // Verify bcrypt.hash was called with password and salt rounds
     expect(mockBcryptHash).toHaveBeenCalledWith('SecurePass123', 12);
@@ -320,8 +320,9 @@ describe('POST /api/auth/register', () => {
 
     const response = await POST(request);
 
-    expect(response.headers.get('Retry-After')).toBeDefined();
-    expect(Number(response.headers.get('Retry-After'))).toBeGreaterThan(0);
+    const retryAfterHeader = response.headers.get('Retry-After');
+    expect(retryAfterHeader).toBeDefined();
+    expect(Number(retryAfterHeader)).toBeGreaterThan(0);
   });
 
   it('should include rate limit headers on 429 response', async () => {

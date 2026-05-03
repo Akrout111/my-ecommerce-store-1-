@@ -1,25 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { ProductUpdateInput } from '@/lib/validations/product';
-import { z } from 'zod';
+import { success, forbidden, validationError, notFound, internalError } from '@/lib/api-response';
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return forbidden();
     }
     const { id } = await params;
     const body = await request.json();
 
     const result = ProductUpdateInput.safeParse(body);
     if (!result.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: result.error.issues },
-        { status: 400 },
-      );
+      return validationError(result.error.issues);
     }
 
     const data = result.data;
@@ -50,15 +47,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (data.isBestSeller !== undefined) prismaData.isBestSeller = data.isBestSeller;
 
     const product = await prisma.product.update({ where: { id }, data: prismaData });
-    return NextResponse.json({ product });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: error.issues },
-        { status: 400 },
-      );
-    }
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return success({ product });
+  } catch {
+    return internalError();
   }
 }
 
@@ -66,12 +57,12 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return forbidden();
     }
     const { id } = await params;
     await prisma.product.delete({ where: { id } });
-    return NextResponse.json({ success: true });
+    return success({ deleted: true });
   } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return notFound('Product');
   }
 }

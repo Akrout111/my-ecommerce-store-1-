@@ -13,7 +13,13 @@
     "db:reset": "prisma migrate reset",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "type-check": "tsc --noEmit",
+    "docker:build": "docker build -t persona-fashion .",
+    "docker:up": "docker-compose up -d",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:migrate:prod": "prisma migrate deploy",
+    "db:seed:prod": "prisma db seed"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

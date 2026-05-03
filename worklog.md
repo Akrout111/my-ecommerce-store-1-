@@ -455,3 +455,123 @@ Stage Summary:
 - 5 packages removed from production dependencies (three, @react-three/fiber, @react-three/drei, react-syntax-highlighter, @types/three)
 - z-ai-web-dev-sdk and prisma moved to devDependencies
 - No commits made
+
+---
+Task ID: 6-combined
+Agent: DevOps Agent
+Task: Phase 6 — DevOps, CI/CD & Database Migration (Tasks 6.1, 6.2, 6.3)
+
+Work Log:
+- Task 6.1: CI/CD Pipeline with GitHub Actions
+  - Created .github/workflows/ci.yml with 4 jobs: lint, type-check, test, build
+  - lint + type-check run in parallel, build depends on lint + type-check passing
+  - Each job uses oven-sh/setup-bun@v2 for Bun runtime
+  - Added `type-check` script to package.json: `"type-check": "tsc --noEmit"`
+
+- Task 6.2: Dockerfile & Docker Compose
+  - Created Dockerfile with multi-stage build (deps → builder → runner)
+  - Uses node:20-alpine base, installs bun for install/build stages
+  - Runner stage: non-root user (nextjs:nodejs), copies standalone output + static assets
+  - Created .dockerignore: node_modules, .next, .git, db/*.db, .env, skills/, upload/, agent-ctx/
+  - Created docker-compose.yml: single app service on port 3000, named volume for SQLite DB
+  - Added `docker:build` and `docker:up` scripts to package.json
+
+- Task 6.3: Database Migration Scripts
+  - Added `db:migrate:dev` (prisma migrate dev), `db:migrate:prod` (prisma migrate deploy), `db:seed:prod` (prisma db seed) scripts to package.json
+  - Prisma schema remains sqlite (no changes to provider)
+
+- Fixed pre-existing lint error: src/app/[locale]/error.tsx unused `t` variable → renamed to `_t`
+- Lint passes with 0 errors, dev server running clean on port 3000
+- No commits made
+
+Stage Summary:
+- GitHub Actions CI pipeline: lint + type-check + test + build jobs on push/PR to main
+- Docker multi-stage build with standalone Next.js output, non-root container
+- Docker Compose for local containerized development with persistent DB volume
+- Database migration scripts ready for future PostgreSQL migration
+- No changes to Prisma schema or production code
+
+---
+Task ID: 5-combined
+Agent: Error Handling & Observability Agent
+Task: Phase 5 — Error Handling & Observability (Tasks 5.1, 5.2, 5.3)
+
+Work Log:
+
+- Task 5.1: Global Error Boundaries & Pages
+  - Created src/app/[locale]/error.tsx ('use client'):
+    - Uses Framer Motion for entrance animations
+    - AlertTriangle icon with gold brand color
+    - Error message with bilingual support (Arabic/English)
+    - Retry button (calls reset()) and Home link
+    - RTL support via dir={isRTL ? 'rtl' : 'ltr'}
+    - Error digest displayed when available for debugging
+    - useEffect logs error details to console.error for observability
+  - Created src/app/[locale]/not-found.tsx ('use client'):
+    - Stylish 404 design with large gold "404" heading
+    - Search bar with form submission routing to /{locale}/search?q=...
+    - Popular categories links from NAV_CATEGORIES (Women, Men, Kids, Accessories, Shoes, Beauty)
+    - Home link with gold brand button
+    - RTL support, bilingual text
+  - Created src/app/[locale]/loading.tsx:
+    - Branded loading skeleton matching home page layout
+    - HeroSkeleton: full-width with pulse animation for title/subtitle/CTA
+    - CategoryGridSkeleton: 6-column grid with round placeholders
+    - ProductSectionSkeleton: uses ProductCardSkeleton components in 4-col grid
+    - DealsSkeleton: 3-column card placeholders
+    - BannerSkeleton, NewsletterSkeleton: full-width pulse bars
+  - Updated src/components/shared/ErrorBoundary.tsx:
+    - Added `name` prop for error boundary identification (defaults to "UnnamedBoundary")
+    - Added componentDidCatch to log errors with boundary name, error ID, component stack
+    - Generates error ID via generateErrorId() (timestamp + random base36)
+    - Renders helpful UI with gold brand colors, error icon, error ID display
+  - Created src/app/[locale]/admin/error.tsx:
+    - Simpler version for admin panel with AlertTriangle icon, error message, retry button
+    - Gold brand color (#C9A96E) styling
+  - Created src/app/[locale]/account/error.tsx:
+    - Same pattern as admin, tailored for account section
+
+- Task 5.2: API Error Standardization
+  - Created src/lib/api-response.ts with helper functions:
+    - success<T>(data, meta?, status?) → { success: true, data, meta? }
+    - error(message, code, status) → { success: false, error, code, correlationId }
+    - validationError(details) → 400 with correlationId
+    - unauthorized() → 401
+    - forbidden() → 403
+    - notFound(resource?) → 404
+    - rateLimited(retryAfter) → 429 with Retry-After header
+    - internalError(message?) → 500
+    - conflict(message) → 409
+    - All error responses include crypto.randomUUID() correlationId for request tracing
+    - All errors logged via console.error with code, status, correlationId
+  - Refactored 7 API routes to use standardized response helpers:
+    - src/app/api/admin/products/route.ts (GET, POST): forbidden(), success(), validationError(), internalError()
+    - src/app/api/admin/products/[id]/route.ts (PUT, DELETE): forbidden(), validationError(), notFound(), success(), internalError()
+    - src/app/api/admin/orders/route.ts (GET): forbidden(), success(), internalError()
+    - src/app/api/admin/orders/[id]/route.ts (GET, PATCH): forbidden(), validationError(), notFound(), success(), internalError()
+    - src/app/api/admin/analytics/route.ts (GET): forbidden(), success(), internalError()
+    - src/app/api/upload/route.ts (POST): forbidden(), validationError(), success(), internalError()
+    - src/app/api/auth/register/route.ts (POST): rateLimited(), validationError(), conflict(), success(), internalError()
+      - Uses withRateLimitHeaders() helper to attach rate limit headers to all responses
+      - Rate limit headers (X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset) preserved on all paths
+  - Updated register test to match new response format (data.data.user.email instead of data.user.email)
+
+- Task 5.3: Health Check Endpoints
+  - Created src/app/api/health/route.ts:
+    - Returns { status: 'ok', timestamp, version: '1.0.0', uptime: process.uptime() }
+    - No authentication required, returns 200
+  - Created src/app/api/health/db/route.ts:
+    - Tests database connection via prisma.$queryRaw`SELECT 1`
+    - Returns { status: 'ok', database: 'connected', responseTime: ms }
+    - Returns 503 if database unavailable with { status: 'error', database: 'unavailable', error, responseTime }
+    - Logs database unavailability to console.error
+
+- Verification: bun run lint = 0 errors, bun run test = 108/108 passing, dev server clean
+
+Stage Summary:
+- Global error pages: error.tsx (retry + home link + RTL), not-found.tsx (search + categories + home link), loading.tsx (branded skeleton)
+- ErrorBoundary enhanced with componentDidCatch logging, name prop, error ID tracking
+- Admin and account sections have dedicated simpler error boundaries
+- All 7 API routes use standardized response helpers with correlation IDs for request tracing
+- Health check endpoints: /api/health (app status) and /api/health/db (database connectivity)
+- No commits made

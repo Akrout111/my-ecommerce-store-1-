@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { registerRateLimiter } from '@/lib/rate-limit';
+import { success, validationError, conflict, rateLimited, internalError } from '@/lib/api-response';
 
 const schema = z.object({
   name: z.string().min(2),
@@ -10,46 +11,44 @@ const schema = z.object({
   password: z.string().min(8),
 });
 
+function withRateLimitHeaders(response: NextResponse, rateLimitResult: { remaining: number; resetTime: number }, maxRequests: number): NextResponse {
+  response.headers.set('X-RateLimit-Limit', String(maxRequests));
+  response.headers.set('X-RateLimit-Remaining', String(rateLimitResult.remaining));
+  response.headers.set('X-RateLimit-Reset', String(rateLimitResult.resetTime));
+  return response;
+}
+
 export async function POST(request: NextRequest) {
   // Rate limiting: 3 registrations per hour per IP
   const rateLimitResult = registerRateLimiter(request);
-  const limit = String(registerRateLimiter.config.maxRequests);
+  const maxRequests = registerRateLimiter.config.maxRequests;
 
   if (!rateLimitResult.success) {
     const retryAfter = Math.ceil(
       (rateLimitResult.resetTime - Date.now()) / 1000
     );
-    return NextResponse.json(
-      { error: 'Too many requests', retryAfter },
-      {
-        status: 429,
-        headers: {
-          'X-RateLimit-Limit': limit,
-          'X-RateLimit-Remaining': String(rateLimitResult.remaining),
-          'X-RateLimit-Reset': String(rateLimitResult.resetTime),
-          'Retry-After': String(retryAfter),
-        },
-      }
-    );
+    const response = rateLimited(retryAfter);
+    response.headers.set('X-RateLimit-Limit', String(maxRequests));
+    response.headers.set('X-RateLimit-Remaining', String(rateLimitResult.remaining));
+    response.headers.set('X-RateLimit-Reset', String(rateLimitResult.resetTime));
+    return response;
   }
 
   try {
     const body = await request.json();
-    const { name, email, password } = schema.parse(body);
+    const parsed = schema.safeParse(body);
+
+    if (!parsed.success) {
+      const response = validationError(parsed.error.issues);
+      return withRateLimitHeaders(response, rateLimitResult, maxRequests);
+    }
+
+    const { name, email, password } = parsed.data;
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
-      return NextResponse.json(
-        { error: 'Email already in use' },
-        {
-          status: 409,
-          headers: {
-            'X-RateLimit-Limit': limit,
-            'X-RateLimit-Remaining': String(rateLimitResult.remaining),
-            'X-RateLimit-Reset': String(rateLimitResult.resetTime),
-          },
-        }
-      );
+      const response = conflict('Email already in use');
+      return withRateLimitHeaders(response, rateLimitResult, maxRequests);
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -58,41 +57,14 @@ export async function POST(request: NextRequest) {
       select: { id: true, email: true, name: true },
     });
 
-    return NextResponse.json(
-      { success: true, user },
-      {
-        status: 201,
-        headers: {
-          'X-RateLimit-Limit': limit,
-          'X-RateLimit-Remaining': String(rateLimitResult.remaining),
-          'X-RateLimit-Reset': String(rateLimitResult.resetTime),
-        },
-      }
-    );
-  } catch (error) {
+    const response = success({ user }, undefined, 201);
+    return withRateLimitHeaders(response, rateLimitResult, maxRequests);
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: error.issues },
-        {
-          status: 400,
-          headers: {
-            'X-RateLimit-Limit': limit,
-            'X-RateLimit-Remaining': String(rateLimitResult.remaining),
-            'X-RateLimit-Reset': String(rateLimitResult.resetTime),
-          },
-        }
-      );
+      const response = validationError(error.issues);
+      return withRateLimitHeaders(response, rateLimitResult, maxRequests);
     }
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      {
-        status: 500,
-        headers: {
-          'X-RateLimit-Limit': limit,
-          'X-RateLimit-Remaining': String(rateLimitResult.remaining),
-          'X-RateLimit-Reset': String(rateLimitResult.resetTime),
-        },
-      }
-    );
+    const response = internalError();
+    return withRateLimitHeaders(response, rateLimitResult, maxRequests);
   }
 }

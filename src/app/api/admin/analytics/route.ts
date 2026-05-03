@@ -1,13 +1,13 @@
-import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { success, forbidden, internalError } from '@/lib/api-response';
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return forbidden();
     }
 
     const now = new Date();
@@ -20,13 +20,13 @@ export async function GET() {
       prisma.order.findMany({ take: 5, orderBy: { createdAt: 'desc' }, include: { items: true } }),
     ]);
 
-    return NextResponse.json({
+    return success({
       totalRevenue: totalRevenue._sum.total || 0,
       totalOrders,
       ordersByStatus: ordersByStatus.map((o) => ({ status: o.status, count: o._count.status })),
       recentOrders,
     });
   } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return internalError();
   }
 }

@@ -1,20 +1,20 @@
-import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { success, forbidden, internalError } from '@/lib/api-response';
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user || session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return forbidden();
     }
     const orders = await prisma.order.findMany({
       include: { items: true },
       orderBy: { createdAt: 'desc' },
     });
-    return NextResponse.json({ orders });
+    return success({ orders });
   } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return internalError();
   }
 }

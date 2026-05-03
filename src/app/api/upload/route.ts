@@ -1,26 +1,27 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { uploadImage } from '@/lib/cloudinary';
+import { success, forbidden, validationError, internalError } from '@/lib/api-response';
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return forbidden();
     }
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
     if (!file) {
-      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+      return validationError({ file: 'No file uploaded' });
     }
 
     const url = await uploadImage(file);
-    return NextResponse.json({ url });
+    return success({ url });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Internal server error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return internalError(message);
   }
 }
