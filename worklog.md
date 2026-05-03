@@ -692,3 +692,30 @@ Stage Summary:
 - Fix: Aligned both to v6, added postinstall + CI generate steps
 - All 18 type errors resolved (Prisma types now properly generated)
 - CI should now pass all 4 checks: lint, type-check, test, build
+
+---
+Task ID: ci-fix-3
+Agent: Main Orchestrator
+Task: Fix GitHub CI build failure — DATABASE_URL not found during prerender
+
+Work Log:
+- Read uploaded GLM-5.1-FIX-PROMPT.md with detailed fix instructions
+- Analyzed root cause: `next build` prerenders /sitemap.xml which calls prisma, but DATABASE_URL is not set in CI
+- Updated .github/workflows/ci.yml:
+  - Added `env: DATABASE_URL: "file:./dev.db"` at workflow level (available to all jobs)
+  - Added `bun run db:push` and `bun run db:seed:prod` steps before build
+- Guarded src/app/sitemap.ts against missing DATABASE_URL:
+  - Returns static sitemap (homepage + search + categories) when DATABASE_URL is not set
+  - Lazy-imports prisma via `await import('@/lib/db')` only when DB is available
+  - This prevents build crash during static generation
+- Updated prisma seed command from `bun prisma/seed.ts` to `tsx prisma/seed.ts` (CI uses Node, not Bun runtime for prisma seed)
+- Installed tsx as dev dependency
+- Verified: type-check passes, lint passes
+- Committed and pushed as a9f70dd
+
+Stage Summary:
+- DATABASE_URL env var added to CI workflow for all jobs
+- Sitemap route gracefully handles missing DATABASE_URL (static fallback)
+- Build job now runs db:push + db:seed before build to ensure DB is populated
+- Prisma seed command uses tsx for cross-platform CI compatibility
+- All changes pushed to origin/main
