@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 interface CartItemInput {
   productId: string;
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
       guestEmail?: string;
     };
 
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
 
     // Server-side price verification
     const productIds = items.map((i) => i.productId);
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
     const order = await prisma.order.create({
       data: {
         orderNumber,
-        userId: session?.user ? (session.user as any).id : undefined,
+        userId: session?.user ? session.user.id : undefined,
         guestEmail: guestEmail,
         status: 'pending',
         items: { create: orderItems },
@@ -86,8 +87,8 @@ export async function POST(request: NextRequest) {
       orderNumber,
       total,
     });
-  } catch (error: any) {
-    console.error('[checkout/create-payment-intent]', error);
-    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Internal server error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

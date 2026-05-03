@@ -11,7 +11,7 @@ const intlMiddleware = createIntlMiddleware({
 export default withAuth(
   function middleware(req) {
     const { pathname } = req.nextUrl;
-    const token = (req as any).nextauth?.token;
+    const token = req.nextauth.token;
 
     // Admin protection
     if (pathname.includes('/admin') && token?.role !== 'admin') {
@@ -22,11 +22,7 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token, req }) => {
-        const { pathname } = req.nextUrl;
-        if (pathname.includes('/account') || pathname.includes('/checkout')) {
-          return !!token;
-        }
+      authorized: ({ token }) => {
         return true;
       },
     },

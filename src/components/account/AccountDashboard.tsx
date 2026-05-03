@@ -15,6 +15,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import Image from "next/image";
 import { signOut } from "next-auth/react";
 import { ProductCard } from "@/components/products/ProductCard";
+import type { Product } from "@/types/product";
 
 interface Order {
   id: string; date: string; status: "pending" | "paid" | "shipped" | "delivered" | "cancelled";
@@ -26,12 +27,6 @@ interface Address {
   id: string; label: string; firstName: string; lastName: string;
   street: string; city: string; state: string; postalCode: string;
   country: string; phone: string; isDefault: boolean;
-}
-
-interface Product {
-  id: string; name: string; price: number; salePrice?: number;
-  images: string[]; category: string; rating: number; reviewCount: number;
-  brand: string; inStock: boolean;
 }
 
 interface AccountDashboardProps {
@@ -76,10 +71,10 @@ const addressSchema = z.object({
   postalCode: z.string().min(3),
   country: z.string().min(2),
   phone: z.string().min(5),
-  isDefault: z.boolean().default(false),
+  isDefault: z.boolean(),
 });
 
-type AddressFormData = z.infer<typeof addressSchema>;
+type AddressFormData = z.input<typeof addressSchema>;
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),

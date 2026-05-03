@@ -1,19 +1,64 @@
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { AccountDashboard } from '@/components/account/AccountDashboard';
 import { prisma } from '@/lib/db';
+import type { Product } from '@/types/product';
 
 export const metadata = { title: 'My Account | Persona' };
 
-function safeJsonParse(str: string, fallback: any) {
+function safeJsonParse(str: string, fallback: unknown) {
   try { return JSON.parse(str); } catch { return fallback; }
 }
 
+function parseProduct(p: {
+  id: string; name: string; nameAr?: string | null;
+  description: string; descriptionAr?: string | null;
+  price: number; salePrice?: number | null; brand: string;
+  images: string; category: string; subcategory?: string | null;
+  sizes: string; colors: string;
+  rating: number; reviewCount: number;
+  inStock: boolean; stockCount: number;
+  isFeatured?: boolean; isNew: boolean; isBestSeller: boolean;
+  tags?: string | null;
+  createdAt: Date; updatedAt: Date;
+}): Product {
+  return {
+    id: p.id,
+    name: p.name,
+    nameAr: p.nameAr,
+    description: p.description,
+    descriptionAr: p.descriptionAr,
+    price: p.price,
+    salePrice: p.salePrice ?? undefined,
+    brand: p.brand,
+    images: safeJsonParse(p.images, []) as string[],
+    category: p.category,
+    subcategory: p.subcategory,
+    sizes: safeJsonParse(p.sizes, []) as string[],
+    colors: safeJsonParse(p.colors, []) as string[],
+    rating: p.rating,
+    reviewCount: p.reviewCount,
+    inStock: p.inStock,
+    stockCount: p.stockCount,
+    isFeatured: p.isFeatured,
+    isNew: p.isNew,
+    isBestSeller: p.isBestSeller,
+    tags: safeJsonParse(p.tags ?? '[]', []) as string[],
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+  };
+}
+
 export default async function AccountPage() {
-  const session = await getServerSession();
+  // Ensure dynamic rendering (account pages should never be cached)
+  await cookies();
+  
+  const session = await getServerSession(authOptions);
   if (!session?.user) redirect('/auth/login');
 
-  const userId = (session.user as any).id;
+  const userId = session.user.id;
 
   // Fetch orders
   const orders = await prisma.order.findMany({
@@ -36,23 +81,16 @@ export default async function AccountPage() {
     orderBy: { isDefault: 'desc' },
   }).catch(() => []);
 
-  // Parse products
-  const parseProduct = (p: any) => ({
-    ...p,
-    images: safeJsonParse(p.images, []),
-    sizes: safeJsonParse(p.sizes, []),
-    colors: safeJsonParse(p.colors, []),
-    tags: safeJsonParse(p.tags ?? '[]', []),
-  });
+  const wishlist = wishlistItems
+    .filter((w) => w.product)
+    .map((w) => parseProduct(w.product));
 
-  const wishlist = wishlistItems.map((w: any) => parseProduct(w.product || {})).filter((p: any) => p.id);
-
-  // Map orders to the format AccountDashboard expects
-  const mappedOrders = orders.map((order: any) => ({
+  // Map orders
+  const mappedOrders = orders.map((order) => ({
     id: order.orderNumber || order.id,
     date: order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '',
-    status: order.status as any,
-    items: order.items.map((item: any) => ({
+    status: order.status as "pending" | "paid" | "shipped" | "delivered" | "cancelled",
+    items: order.items.map((item) => ({
       name: item.name,
       image: item.imageUrl || undefined,
       size: item.size || undefined,
@@ -63,22 +101,22 @@ export default async function AccountPage() {
     total: order.total,
     shippingAddress: order.shippingAddressJson || '',
     paymentMethod: order.stripePaymentIntentId ? 'Card' : 'N/A',
-    trackingNumber: undefined,
+    trackingNumber: undefined as string | undefined,
   }));
 
   // Map addresses
-  const mappedAddresses = addresses.map((addr: any) => ({
+  const mappedAddresses = addresses.map((addr) => ({
     id: addr.id,
     label: addr.label || 'Home',
-    firstName: addr.firstName || '',
-    lastName: addr.lastName || '',
-    street: addr.street || '',
-    city: addr.city || '',
+    firstName: addr.firstName,
+    lastName: addr.lastName,
+    street: addr.street,
+    city: addr.city,
     state: addr.state || '',
-    postalCode: addr.postalCode || '',
-    country: addr.country || '',
+    postalCode: addr.postalCode,
+    country: addr.country,
     phone: addr.phone || '',
-    isDefault: addr.isDefault || false,
+    isDefault: addr.isDefault,
   }));
 
   return (
@@ -91,9 +129,9 @@ export default async function AccountPage() {
             email: session.user.email || '',
             image: session.user.image || undefined,
           }}
-          orders={mappedOrders as any}
+          orders={mappedOrders}
           wishlist={wishlist}
-          addresses={mappedAddresses as any}
+          addresses={mappedAddresses}
         />
       </div>
     </main>

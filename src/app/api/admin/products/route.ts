@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
-function safeJsonParse(str: string, fallback: any) {
+function safeJsonParse(str: string, fallback: unknown) {
   try { return JSON.parse(str); } catch { return fallback; }
 }
 
 export async function GET() {
   try {
-    const session = await getServerSession();
-    if (!session?.user || (session.user as any).role !== 'admin') {
+    const session = await getServerSession(authOptions);
+    if (!session?.user || session.user.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     const products = await prisma.product.findMany({ orderBy: { createdAt: 'desc' } });
@@ -28,8 +29,8 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
-    if (!session?.user || (session.user as any).role !== 'admin') {
+    const session = await getServerSession(authOptions);
+    if (!session?.user || session.user.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     const body = await request.json();

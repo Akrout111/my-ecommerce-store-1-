@@ -6,7 +6,6 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: false,
   },
   reactStrictMode: true,
-  cacheComponents: true,
   images: {
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 86400,

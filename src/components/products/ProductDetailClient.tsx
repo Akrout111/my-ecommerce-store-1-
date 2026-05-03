@@ -110,7 +110,7 @@ export function ProductDetailClient({ product, relatedProducts }: ProductDetailC
     addItem({
       id: product.id,
       productId: product.id,
-      product: product as any,
+      product: product as unknown as Parameters<typeof addItem>[0]["product"],
       name: product.name,
       price: product.salePrice ?? product.price,
       image: product.images[0] || "",

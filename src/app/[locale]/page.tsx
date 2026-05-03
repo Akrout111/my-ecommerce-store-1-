@@ -6,16 +6,14 @@ import { DealsSection } from '@/components/home/DealsSection';
 import { NewArrivals } from '@/components/home/NewArrivals';
 import { PromoBanner } from '@/components/home/PromoBanner';
 import { BestSellers } from '@/components/home/BestSellers';
-import dynamic from 'next/dynamic';
+import { BrandMarquee } from '@/components/home/BrandMarquee';
+import { DepartmentHub } from '@/components/home/DepartmentHub';
+import { NewsletterSection } from '@/components/home/NewsletterSection';
 import { Suspense } from 'react';
 import { ProductCardSkeleton } from '@/components/shared/ProductCardSkeleton';
+import type { Product } from '@/types/product';
 
-// Dynamic imports for below-fold heavy components
-const BrandMarquee = dynamic(() => import('@/components/home/BrandMarquee').then(m => ({ default: m.BrandMarquee })), { ssr: false });
-const DepartmentHub = dynamic(() => import('@/components/home/DepartmentHub').then(m => ({ default: m.DepartmentHub })), { ssr: true });
-const NewsletterSection = dynamic(() => import('@/components/home/NewsletterSection').then(m => ({ default: m.NewsletterSection })), { ssr: true });
-
-function safeJsonParse(str: string, fallback: any) {
+function safeJsonParse(str: string, fallback: unknown) {
   try { return JSON.parse(str); } catch { return fallback; }
 }
 
@@ -27,7 +25,44 @@ function ProductSectionSkeleton() {
   );
 }
 
-// Enable Partial Prerendering via next.config.ts cacheComponents
+function parseProduct(p: {
+  id: string; name: string; nameAr?: string | null;
+  description: string; descriptionAr?: string | null;
+  price: number; salePrice?: number | null; brand: string;
+  images: string; category: string; subcategory?: string | null;
+  sizes: string; colors: string;
+  rating: number; reviewCount: number;
+  inStock: boolean; stockCount: number;
+  isFeatured?: boolean; isNew: boolean; isBestSeller: boolean;
+  tags?: string | null;
+  createdAt: Date; updatedAt: Date;
+}): Product {
+  return {
+    id: p.id,
+    name: p.name,
+    nameAr: p.nameAr,
+    description: p.description,
+    descriptionAr: p.descriptionAr,
+    price: p.price,
+    salePrice: p.salePrice ?? undefined,
+    brand: p.brand,
+    images: safeJsonParse(p.images, []) as string[],
+    category: p.category,
+    subcategory: p.subcategory,
+    sizes: safeJsonParse(p.sizes, []) as string[],
+    colors: safeJsonParse(p.colors, []) as string[],
+    rating: p.rating,
+    reviewCount: p.reviewCount,
+    inStock: p.inStock,
+    stockCount: p.stockCount,
+    isFeatured: p.isFeatured,
+    isNew: p.isNew,
+    isBestSeller: p.isBestSeller,
+    tags: safeJsonParse(p.tags ?? '[]', []) as string[],
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+  };
+}
 
 export default async function HomePage() {
   // Optimized: Use parallel queries with targeted where clauses
@@ -37,14 +72,6 @@ export default async function HomePage() {
     prisma.product.findMany({ where: { isBestSeller: true }, take: 8 }),
     prisma.deal.findMany({ where: { isActive: true }, include: { product: true }, take: 6 }),
   ]);
-
-  const parseProduct = (p: any) => ({
-    ...p,
-    images: safeJsonParse(p.images, []),
-    sizes: safeJsonParse(p.sizes, []),
-    colors: safeJsonParse(p.colors, []),
-    tags: safeJsonParse(p.tags ?? '[]', []),
-  });
 
   const featuredProducts = featured.map(parseProduct);
   const newArrivalProducts = newArrivals.map(parseProduct);
