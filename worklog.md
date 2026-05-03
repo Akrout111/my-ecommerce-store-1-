@@ -668,3 +668,27 @@ Stage Summary:
 - Test files are handled by Vitest's own config (globals: true provides vi at runtime)
 - This is standard practice — production type-check shouldn't include test files
 - Commit pushed successfully to GitHub
+
+---
+Task ID: ci-fix-2
+Agent: Main Orchestrator
+Task: Fix GitHub CI type-check failure (all 18 errors)
+
+Work Log:
+- Analyzed CI error output: 18 type errors across 9 files
+- Identified root cause: prisma CLI v7.8.0 was incompatible with @prisma/client v6.x
+  - Prisma 7 doesn't support `url = env("DATABASE_URL")` in schema.prisma
+  - On CI, `prisma generate` failed silently → no Prisma types generated → all query results typed as `any`
+  - This caused cascading "Parameter implicitly has an 'any' type" errors in .map()/.filter() callbacks
+  - Also caused "Namespace has no exported member 'ProductWhereInput'" errors
+- Downgraded prisma CLI from ^7.8.0 to 6.19.3 (matches @prisma/client@6.x)
+- Added `postinstall` script: `"postinstall": "prisma generate"` for automatic client generation
+- Updated CI workflow (.github/workflows/ci.yml): added `bun run db:generate` step before lint/type-check/test/build
+- Verified: `npx tsc --noEmit` passes with zero errors, `bun run lint` passes with zero errors
+- Committed and pushed as 39ae7dc
+
+Stage Summary:
+- Root cause: Prisma CLI v7 / Client v6 version mismatch caused generate failure on CI
+- Fix: Aligned both to v6, added postinstall + CI generate steps
+- All 18 type errors resolved (Prisma types now properly generated)
+- CI should now pass all 4 checks: lint, type-check, test, build
