@@ -51,7 +51,7 @@ function parseProduct(p: {
 export default async function AccountPage() {
   // Ensure dynamic rendering (account pages should never be cached)
   await cookies();
-  
+
   const session = await getServerSession(authOptions);
   if (!session?.user) redirect('/auth/login');
 
